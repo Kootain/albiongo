@@ -28,7 +28,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
   const searchName = config.searchName || "";
   const searchItem = config.searchItem || "";
   const minPLevel = config.minPLevel || 0;
-  const sortByWeapon = config.sortByWeapon || false;
+  const sortByPLevel = config.sortByPLevel || false;
   const sortByWeaponType = config.sortByWeaponType || false;
 
   const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
@@ -79,50 +79,62 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
       return true;
     });
 
-    if (sortByWeapon) {
+    if (sortByWeaponType || sortByPLevel) {
       return result.sort((a, b) => {
+        const getWType = (p: typeof a) => {
+          const wid = (p.Equipments || [])[0];
+          if (!wid) return "ZZZ"; // Put unknown at the end
+          const item = getItem(wid);
+          if (!item) return "ZZZ";
+          const nameZH = item.Name && item.Name['ZH-CN'] ? item.Name['ZH-CN'] : '';
+          return getWeaponType(nameZH) || "ZZZ";
+        };
+
+        if (sortByWeaponType) {
+          const typeA = getWType(a);
+          const typeB = getWType(b);
+          
+          const typeOrder: Record<string, number> = {
+            "坦克": 1,
+            "辅助": 2,
+            "治疗": 3,
+            "远程输出": 4,
+            "近战输出": 5,
+          };
+          
+          const orderA = typeOrder[typeA] || 999;
+          const orderB = typeOrder[typeB] || 999;
+          
+          if (orderA !== orderB) return orderA - orderB;
+        }
+
+        if (sortByPLevel) {
+          const getPLevel = (p: typeof a) => {
+            const wid = (p.Equipments || [])[0];
+            if (!wid) return 0;
+            const item = getItem(wid);
+            if (!item) return 0;
+            return item.Tier + item.Enchant;
+          };
+          const pLevelA = getPLevel(a);
+          const pLevelB = getPLevel(b);
+          if (pLevelA !== pLevelB) return pLevelB - pLevelA; // Descending
+        }
+        
+        // Secondary/Tertiary sort by weapon ID
         const weaponA = (a.Equipments || [])[0] || 0;
         const weaponB = (b.Equipments || [])[0] || 0;
-        return weaponB - weaponA; 
+        return weaponB - weaponA;
       });
     }
 
-    if (sortByWeaponType) {
-        return result.sort((a, b) => {
-            const getWType = (p: typeof a) => {
-                const wid = (p.Equipments || [])[0];
-                if (!wid) return "ZZZ"; // Put unknown at the end
-                const item = getItem(wid);
-                if (!item) return "ZZZ";
-                const nameZH = item.Name && item.Name['ZH-CN'] ? item.Name['ZH-CN'] : '';
-                return getWeaponType(nameZH) || "ZZZ";
-            };
-            
-            const typeA = getWType(a);
-            const typeB = getWType(b);
-            
-            const typeOrder: Record<string, number> = {
-                "坦克": 1,
-                "辅助": 2,
-                "治疗": 3,
-                "远程输出": 4,
-                "近战输出": 5,
-            };
-            
-            const orderA = typeOrder[typeA] || 999;
-            const orderB = typeOrder[typeB] || 999;
-            
-            if (orderA !== orderB) return orderA - orderB;
-            
-            // Secondary sort by weapon ID if types match
-            const weaponA = (a.Equipments || [])[0] || 0;
-            const weaponB = (b.Equipments || [])[0] || 0;
-            return weaponB - weaponA;
-        });
-    }
-
-    return result;
-  }, [players, filterGuild, filterAlliance, searchName, sortByWeapon, sortByWeaponType]);
+    // Default sort by weapon ID
+    return result.sort((a, b) => {
+      const weaponA = (a.Equipments || [])[0] || 0;
+      const weaponB = (b.Equipments || [])[0] || 0;
+      return weaponB - weaponA; 
+    });
+  }, [players, filterGuild, filterAlliance, searchName, sortByPLevel, sortByWeaponType]);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -307,21 +319,21 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
             <div className="flex gap-3">
               <button 
                 className="flex items-center justify-between flex-1 max-w-[140px] px-3 py-2 text-sm rounded-lg bg-zinc-950 border border-zinc-800 hover:bg-zinc-900 transition-colors group"
-                onClick={() => updateColumnFilters(config.id, { sortByWeapon: !sortByWeapon, sortByWeaponType: false })}
+                onClick={() => updateColumnFilters(config.id, { sortByWeaponType: !sortByWeaponType })}
               >
-                <span className="text-zinc-400 group-hover:text-zinc-200 truncate mr-2">{t("Sort by Weapon ID")}</span>
-                <div className={`w-8 h-4 rounded-full relative transition-colors flex-shrink-0 ${sortByWeapon ? "bg-indigo-600" : "bg-zinc-700"}`}>
-                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeapon ? "translate-x-4" : ""}`} />
+                <span className="text-zinc-400 group-hover:text-zinc-200 truncate mr-2">{t("Sort by Weapon Type")}</span>
+                <div className={`w-8 h-4 rounded-full relative transition-colors flex-shrink-0 ${sortByWeaponType ? "bg-indigo-600" : "bg-zinc-700"}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeaponType ? "translate-x-4" : ""}`} />
                 </div>
               </button>
 
               <button 
                 className="flex items-center justify-between flex-1 max-w-[140px] px-3 py-2 text-sm rounded-lg bg-zinc-950 border border-zinc-800 hover:bg-zinc-900 transition-colors group"
-                onClick={() => updateColumnFilters(config.id, { sortByWeaponType: !sortByWeaponType, sortByWeapon: false })}
+                onClick={() => updateColumnFilters(config.id, { sortByPLevel: !sortByPLevel })}
               >
-                <span className="text-zinc-400 group-hover:text-zinc-200 truncate mr-2">{t("Sort by Weapon Type")}</span>
-                <div className={`w-8 h-4 rounded-full relative transition-colors flex-shrink-0 ${sortByWeaponType ? "bg-indigo-600" : "bg-zinc-700"}`}>
-                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeaponType ? "translate-x-4" : ""}`} />
+                <span className="text-zinc-400 group-hover:text-zinc-200 truncate mr-2">{t("Sort by P-Level")}</span>
+                <div className={`w-8 h-4 rounded-full relative transition-colors flex-shrink-0 ${sortByPLevel ? "bg-indigo-600" : "bg-zinc-700"}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${sortByPLevel ? "translate-x-4" : ""}`} />
                 </div>
               </button>
             </div>

@@ -11,6 +11,7 @@ export interface PlayerColumnConfig {
   searchName?: string;
   searchItem?: string;
   minPLevel?: number;
+  sortByPLevel?: boolean;
   sortByWeapon?: boolean;
   sortByWeaponType?: boolean;
 }
