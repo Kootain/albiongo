@@ -54,6 +54,5 @@ logs
 *.log
 
 # Project specific binaries
-albiongo
 item_manager
 spell_manager

@@ -65,3 +65,8 @@ type IPlayerNameAware interface {
 	PlayerName() string
 	PlayerID() int
 }
+
+type ICaster interface {
+	GetCasterID() IPlayerObjectID
+	SetCasterName(string)
+}
