@@ -174,6 +174,12 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
     }
   };
 
+  const getFilterGridClass = (width: number) => {
+    if (width >= 3) return "grid-cols-5";
+    if (width === 2) return "grid-cols-3";
+    return "grid-cols-1";
+  };
+
   const widthClass = getWidthClass(config.width);
 
   const filterSummary = [
@@ -236,7 +242,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
         
         {!isFiltersCollapsed && (
           <div className="px-4 pb-4 space-y-3">
-            <div className={`grid gap-3 ${config.width >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className={`grid gap-3 ${getFilterGridClass(config.width)}`}>
               <div className="relative">
                 <Search
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
@@ -259,7 +265,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                 </datalist>
               </div>
 
-              <div className="relative">
+              <div className="relative max-w-[240px]">
                 <Search
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
                   size={14}
@@ -340,24 +346,24 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
               </div>
             </div>
 
-            <div className={`grid gap-3 ${config.width >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+            <div className="flex gap-3">
               <button 
-                className="flex items-center justify-between w-full p-2 text-sm rounded-lg bg-zinc-950/50 hover:bg-zinc-950 transition-colors group"
+                className="flex items-center justify-between flex-1 max-w-[140px] px-3 py-2 text-sm rounded-lg bg-zinc-950 border border-zinc-800 hover:bg-zinc-900 transition-colors group"
                 onClick={() => updateColumnFilters(config.id, { sortByWeapon: !sortByWeapon, sortByWeaponType: false })}
               >
-                <span className="text-zinc-400 group-hover:text-zinc-200">{t("Sort by Weapon ID")}</span>
-                <div className={`w-10 h-5 rounded-full relative transition-colors ${sortByWeapon ? "bg-indigo-600" : "bg-zinc-700"}`}>
-                  <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeapon ? "translate-x-5" : ""}`} />
+                <span className="text-zinc-400 group-hover:text-zinc-200 truncate mr-2">{t("Sort by Weapon ID")}</span>
+                <div className={`w-8 h-4 rounded-full relative transition-colors flex-shrink-0 ${sortByWeapon ? "bg-indigo-600" : "bg-zinc-700"}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeapon ? "translate-x-4" : ""}`} />
                 </div>
               </button>
 
               <button 
-                className="flex items-center justify-between w-full p-2 text-sm rounded-lg bg-zinc-950/50 hover:bg-zinc-950 transition-colors group"
+                className="flex items-center justify-between flex-1 max-w-[140px] px-3 py-2 text-sm rounded-lg bg-zinc-950 border border-zinc-800 hover:bg-zinc-900 transition-colors group"
                 onClick={() => updateColumnFilters(config.id, { sortByWeaponType: !sortByWeaponType, sortByWeapon: false })}
               >
-                <span className="text-zinc-400 group-hover:text-zinc-200">{t("Sort by Weapon Type")}</span>
-                <div className={`w-10 h-5 rounded-full relative transition-colors ${sortByWeaponType ? "bg-indigo-600" : "bg-zinc-700"}`}>
-                  <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeaponType ? "translate-x-5" : ""}`} />
+                <span className="text-zinc-400 group-hover:text-zinc-200 truncate mr-2">{t("Sort by Weapon Type")}</span>
+                <div className={`w-8 h-4 rounded-full relative transition-colors flex-shrink-0 ${sortByWeaponType ? "bg-indigo-600" : "bg-zinc-700"}`}>
+                  <div className={`absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeaponType ? "translate-x-4" : ""}`} />
                 </div>
               </button>
             </div>
