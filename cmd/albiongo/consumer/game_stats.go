@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"reflect"
 	"sync"
+	"time"
 )
 
 type GameStats struct {
@@ -151,7 +152,13 @@ func (g *GameStats) PlayerNameComplete(e protocol.Command) {
 	}
 }
 
+// TODO: 用服务器时间同步校准？
+func (g *GameStats) NowTimestampMS() int64 {
+	return time.Now().UnixMilli()
+}
+
 func (g *GameStats) GameStatsConsumer(ctx context.Context, event protocol.Command) error {
+	event.SetTimestamp(g.NowTimestampMS())
 	g.PlayerNameComplete(event)
 
 	switch event := event.(type) {

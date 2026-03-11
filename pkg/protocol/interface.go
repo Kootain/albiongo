@@ -12,6 +12,7 @@ const (
 type Command interface {
 	GetType() ProtocolType
 	SetType(ProtocolType)
+	SetTimestamp(int64)
 }
 
 type Operation interface {

@@ -1,14 +1,14 @@
 package types
 
 import (
-	"albiongo/pkg/game"
 	"albiongo/pkg/protocol"
 	"fmt"
 )
 
 type EventBase struct {
-	Type protocol.ProtocolType
-	Code protocol.EventType
+	Type      protocol.ProtocolType
+	Code      protocol.EventType
+	Timestamp int64
 }
 
 func (EventBase) GetType() protocol.ProtocolType {
@@ -31,8 +31,8 @@ func (e EventBase) String() string {
 	return fmt.Sprintf("[Event][%s](%d)", e.Code.String()[2:], e.Code)
 }
 
-func (e EventBase) Init(game.IGame) error {
-	return nil
+func (e *EventBase) SetTimestamp(ts int64) {
+	e.Timestamp = ts
 }
 
 func NewEventBase(eventType protocol.EventType) *EventBase {
@@ -44,10 +44,6 @@ func NewEventBase(eventType protocol.EventType) *EventBase {
 type DefaultEventTypes struct {
 	*EventBase
 	Data map[uint8]interface{}
-}
-
-func (t *DefaultEventTypes) Init(game.IGame) error {
-	return nil
 }
 
 func (t DefaultEventTypes) String() string {
@@ -62,8 +58,9 @@ func NewDefaultEventType(code protocol.EventType, params map[uint8]interface{}) 
 }
 
 type OperationBase struct {
-	Type protocol.ProtocolType
-	Code protocol.OperationType
+	Type      protocol.ProtocolType
+	Code      protocol.OperationType
+	Timestamp int64
 }
 
 func (base OperationBase) GetType() protocol.ProtocolType {
@@ -82,8 +79,8 @@ func (base *OperationBase) SetCode(code protocol.OperationType) {
 	base.Code = code
 }
 
-func (base OperationBase) Init(game.IGame) error {
-	return nil
+func (base *OperationBase) SetTimestamp(ts int64) {
+	base.Timestamp = ts
 }
 
 func (base OperationBase) String() string {
@@ -94,12 +91,12 @@ func (base OperationBase) String() string {
 	return fmt.Sprintf("[%s][%s](%d)", etype, base.Code.String()[2:], base.Code)
 }
 
-type OptaionDefault struct {
+type DefaultOperation struct {
 	*OperationBase
 	Data map[uint8]interface{}
 }
 
-func (base OptaionDefault) String() string {
+func (base DefaultOperation) String() string {
 	return fmt.Sprintf("%s\t%v", base.OperationBase.String(), base.Data)
 }
 
@@ -110,8 +107,8 @@ func NewOperationBase(operationType protocol.ProtocolType, operationCode protoco
 	}
 }
 
-func NewOperationDefault(operationType protocol.ProtocolType, operationCode protocol.OperationType, params map[uint8]interface{}) *OptaionDefault {
-	return &OptaionDefault{
+func NewOperationDefault(operationType protocol.ProtocolType, operationCode protocol.OperationType, params map[uint8]interface{}) *DefaultOperation {
+	return &DefaultOperation{
 		OperationBase: NewOperationBase(operationType, operationCode),
 		Data:          params,
 	}

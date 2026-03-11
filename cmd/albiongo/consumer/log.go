@@ -23,7 +23,7 @@ func ConsoleLog(ctx context.Context, event protocol.Command) error {
 	case protocol.Operation:
 		prefix := fmt.Sprintf("[%s][%s](%d)", strings.Replace(event.GetType().String(), "ProtocolType", "", 1), event.GetCode().String()[2:], event.GetCode())
 		switch event := event.(type) {
-		case *types.OptaionDefault:
+		case *types.DefaultOperation:
 			logrus.Debugf("%s %v", prefix, event.Data)
 		default:
 			logrus.Debugf("%s %#v", prefix, event)
