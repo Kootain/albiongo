@@ -19,7 +19,7 @@ export const FilterConfigPage: React.FC = () => {
   }, []);
 
   const handleDelete = (id: string) => {
-    if (confirm(t("Are you sure you want to delete this filter?"))) {
+    if (window.confirm(t("Are you sure you want to delete this filter?"))) {
       deleteCustomFactory(id);
       loadFilters();
     }
@@ -68,7 +68,10 @@ export const FilterConfigPage: React.FC = () => {
           <div className="col-span-full flex flex-col items-center justify-center py-12 text-zinc-500 border-2 border-dashed border-zinc-800 rounded-xl">
             <p>{t("No custom filters found")}</p>
             <button
-              onClick={() => setIsEditing(true)}
+              onClick={() => {
+                setEditingFilter(null);
+                setIsEditing(true);
+              }}
               className="mt-4 text-indigo-400 hover:text-indigo-300 hover:underline"
             >
               {t("Create your first filter")}
@@ -103,7 +106,7 @@ export const FilterConfigPage: React.FC = () => {
                 </div>
               </div>
               
-              <div className="text-xs text-zinc-500 font-mono mb-4">ID: {filter.id}</div>
+              <div className="text-xs text-zinc-500 font-mono mb-4">{t("ID")}: {filter.id}</div>
               
               <div className="space-y-2">
                 <div className="text-xs font-medium text-zinc-400 uppercase tracking-wider">{t("Parameters")}</div>

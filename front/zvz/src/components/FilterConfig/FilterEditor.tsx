@@ -172,8 +172,9 @@ export const FilterEditor: React.FC<FilterEditorProps> = ({ initialFactory, onSa
         <div className="flex gap-2">
           <button
             onClick={onCancel}
-            className="px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
+            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-zinc-300 transition-colors"
           >
+            <X size={18} />
             {t("Cancel")}
           </button>
           <button
@@ -199,7 +200,7 @@ export const FilterEditor: React.FC<FilterEditorProps> = ({ initialFactory, onSa
                 onChange={(e) => setId(e.target.value)}
                 disabled={!!initialFactory}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-indigo-500 disabled:opacity-50"
-                placeholder="UNIQUE_ID"
+                placeholder={t("UNIQUE_ID")}
               />
             </div>
             <div>
@@ -209,7 +210,7 @@ export const FilterEditor: React.FC<FilterEditorProps> = ({ initialFactory, onSa
                 value={name}
                 onChange={(e) => setName(e.target.value)}
                 className="w-full bg-zinc-950 border border-zinc-800 rounded px-3 py-2 text-zinc-200 focus:outline-none focus:border-indigo-500"
-                placeholder="My Custom Filter"
+                placeholder={t("My Custom Filter")}
               />
             </div>
           </div>
@@ -235,23 +236,23 @@ export const FilterEditor: React.FC<FilterEditorProps> = ({ initialFactory, onSa
                       value={param.name}
                       onChange={(e) => handleParamChange(index, "name", e.target.value)}
                       className="w-full bg-transparent border-b border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 pb-1"
-                      placeholder="paramName"
+                      placeholder={t("paramName")}
                     />
                     <input
                       type="text"
                       value={param.label}
                       onChange={(e) => handleParamChange(index, "label", e.target.value)}
                       className="w-full bg-transparent border-b border-zinc-800 text-xs text-zinc-300 focus:outline-none focus:border-indigo-500 pb-1"
-                      placeholder="Display Label"
+                      placeholder={t("Display Label")}
                     />
                     <select
                       value={param.type}
                       onChange={(e) => handleParamChange(index, "type", e.target.value)}
                       className="w-full bg-zinc-900 border border-zinc-800 rounded text-xs text-zinc-400 px-1 py-1"
                     >
-                      <option value="string">String</option>
-                      <option value="number">Number</option>
-                      <option value="boolean">Boolean</option>
+                      <option value="string">{t("String")}</option>
+                      <option value="number">{t("Number")}</option>
+                      <option value="boolean">{t("Boolean")}</option>
                     </select>
                   </div>
                   <button
@@ -301,7 +302,7 @@ export const FilterEditor: React.FC<FilterEditorProps> = ({ initialFactory, onSa
             />
           </div>
           <div className="p-3 bg-zinc-900 border-t border-zinc-800 text-xs text-zinc-500 font-mono">
-            Arguments available: <span className="text-indigo-400">user</span>, <span className="text-indigo-400">spell</span>, <span className="text-indigo-400">item</span>, <span className="text-indigo-400">equipments</span>, <span className="text-indigo-400">params</span>
+            {t("Arguments available")}: <span className="text-indigo-400">user</span>, <span className="text-indigo-400">spell</span>, <span className="text-indigo-400">item</span>, <span className="text-indigo-400">equipments</span>, <span className="text-indigo-400">params</span>
           </div>
         </div>
       </div>

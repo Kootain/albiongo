@@ -9,6 +9,9 @@ export interface PlayerColumnConfig {
   filterGuild?: string;
   filterAlliance?: string;
   searchName?: string;
+  searchItem?: string;
+  sortByWeapon?: boolean;
+  sortByWeaponType?: boolean;
 }
 
 interface PlayerStore {
@@ -22,7 +25,7 @@ interface PlayerStore {
   removeColumn: (id: number) => void;
   updateColumnName: (id: number, name: string) => void;
   updateColumnWidth: (id: number, width: number) => void;
-  updateColumnFilters: (id: number, filters: { filterGuild?: string; filterAlliance?: string; searchName?: string }) => void;
+  updateColumnFilters: (id: number, filters: Partial<PlayerColumnConfig>) => void;
 }
 
 export const usePlayerStore = create<PlayerStore>()(

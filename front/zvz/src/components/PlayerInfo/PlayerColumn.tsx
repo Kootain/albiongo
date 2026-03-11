@@ -4,6 +4,10 @@ import { usePlayerStore, PlayerColumnConfig } from "../../store/usePlayerStore";
 import { PlayerCard } from "./PlayerCard";
 import { X, Search, ChevronDown, ChevronRight, Check, Filter } from "lucide-react";
 
+import { ItemSpellSelector } from "../FilterConfig/ItemSpellSelector";
+
+import { getItem, getWeaponType, getLocalizedText } from "../../utils/dataManager";
+
 interface PlayerColumnProps {
   config: PlayerColumnConfig;
   onRemove: () => void;
@@ -21,8 +25,12 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
   const filterGuild = config.filterGuild || "";
   const filterAlliance = config.filterAlliance || "";
   const searchName = config.searchName || "";
+  const searchItem = config.searchItem || "";
+  const sortByWeapon = config.sortByWeapon || false;
+  const sortByWeaponType = config.sortByWeaponType || false;
 
   const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
+  const [isItemSelectorOpen, setIsItemSelectorOpen] = useState(false);
 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState("");
@@ -30,7 +38,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const filteredPlayers = useMemo(() => {
-    return players.filter((p) => {
+    const result = players.filter((p) => {
       if (filterGuild && p.GuildName !== filterGuild) return false;
       if (filterAlliance && p.AllianceName !== filterAlliance) return false;
       if (
@@ -38,9 +46,67 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
         !p.Name.toLowerCase().includes(searchName.toLowerCase())
       )
         return false;
+
+      if (searchItem) {
+        const searchItemLower = searchItem.toLowerCase();
+        const hasItem = (p.Equipments || []).some(id => {
+          if (!id) return false;
+          const item = getItem(id);
+          if (!item) return false;
+          const name = getLocalizedText(item.Name);
+          return name.toLowerCase().includes(searchItemLower);
+        });
+        if (!hasItem) return false;
+      }
+
       return true;
     });
-  }, [players, filterGuild, filterAlliance, searchName]);
+
+    if (sortByWeapon) {
+      return result.sort((a, b) => {
+        const weaponA = (a.Equipments || [])[0] || 0;
+        const weaponB = (b.Equipments || [])[0] || 0;
+        return weaponB - weaponA; 
+      });
+    }
+
+    if (sortByWeaponType) {
+        return result.sort((a, b) => {
+            const getWType = (p: typeof a) => {
+                const wid = (p.Equipments || [])[0];
+                if (!wid) return "ZZZ"; // Put unknown at the end
+                const item = getItem(wid);
+                if (!item) return "ZZZ";
+                const nameZH = item.Name && item.Name['ZH-CN'] ? item.Name['ZH-CN'] : '';
+                return getWeaponType(nameZH) || "ZZZ";
+            };
+            
+            const typeA = getWType(a);
+            const typeB = getWType(b);
+            
+            // Custom order: Tank -> Healer -> Support -> Melee DPS -> Ranged DPS -> Others
+            const typeOrder: Record<string, number> = {
+                "坦克": 1,
+                "治疗": 2,
+                "辅助": 3,
+                "近战输出": 4,
+                "远程输出": 5
+            };
+            
+            const orderA = typeOrder[typeA] || 999;
+            const orderB = typeOrder[typeB] || 999;
+            
+            if (orderA !== orderB) return orderA - orderB;
+            
+            // Secondary sort by weapon ID if types match
+            const weaponA = (a.Equipments || [])[0] || 0;
+            const weaponB = (b.Equipments || [])[0] || 0;
+            return weaponB - weaponA;
+        });
+    }
+
+    return result;
+  }, [players, filterGuild, filterAlliance, searchName, sortByWeapon, sortByWeaponType]);
 
   const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -102,6 +168,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
 
   const filterSummary = [
     searchName ? `S: ${searchName}` : null,
+    searchItem ? `I: ${searchItem}` : null,
     filterGuild ? `G: ${filterGuild}` : null,
     filterAlliance ? `A: ${filterAlliance}` : null,
   ].filter(Boolean).join(", ");
@@ -140,6 +207,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
 
       <div className="border-b border-zinc-800 bg-zinc-900/50">
         <button
+          type="button"
           onClick={() => setIsFiltersCollapsed(!isFiltersCollapsed)}
           className="w-full flex items-center justify-between p-3 text-sm font-medium text-zinc-400 hover:text-zinc-200 transition-colors"
           title={isFiltersCollapsed && filterSummary ? filterSummary : t("Filters")}
@@ -178,6 +246,34 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
               </datalist>
             </div>
 
+            <div className="relative">
+              <Search
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+                size={14}
+              />
+              <input
+                type="text"
+                readOnly
+                placeholder={t("Filter by Equipment")}
+                value={searchItem}
+                onClick={() => setIsItemSelectorOpen(true)}
+                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+              />
+              {searchItem ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    updateColumnFilters(config.id, { searchItem: "" });
+                  }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                >
+                  <X size={14} />
+                </button>
+              ) : (
+                <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none rotate-90" size={14} />
+              )}
+            </div>
+
             <div className={`grid gap-3 ${config.width >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <div className="relative">
                 <Search
@@ -208,19 +304,41 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                   list={`alliances-${config.id}`}
                   value={filterAlliance}
                   onChange={(e) => updateColumnFilters(config.id, { filterAlliance: e.target.value })}
-                  placeholder={`${t("Alliance")}`}
+                  placeholder={t("Alliance")}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full"
                 />
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
                 <datalist id={`alliances-${config.id}`}>
-                  {alliances.map((a) => (
-                    <option key={a} value={a} />
-                  ))}
-                </datalist>
-              </div>
+                {alliances.map((a) => (
+                  <option key={a} value={a} />
+                ))}
+              </datalist>
             </div>
           </div>
-        )}
+
+          <div className="flex flex-col gap-2 mt-2">
+            <button 
+              className="flex items-center justify-between w-full p-2 text-sm rounded-lg bg-zinc-950/50 hover:bg-zinc-950 transition-colors group"
+              onClick={() => updateColumnFilters(config.id, { sortByWeapon: !sortByWeapon, sortByWeaponType: false })}
+            >
+              <span className="text-zinc-400 group-hover:text-zinc-200">{t("Sort by Weapon ID")}</span>
+              <div className={`w-10 h-5 rounded-full relative transition-colors ${sortByWeapon ? "bg-indigo-600" : "bg-zinc-700"}`}>
+                <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeapon ? "translate-x-5" : ""}`} />
+              </div>
+            </button>
+
+            <button 
+              className="flex items-center justify-between w-full p-2 text-sm rounded-lg bg-zinc-950/50 hover:bg-zinc-950 transition-colors group"
+              onClick={() => updateColumnFilters(config.id, { sortByWeaponType: !sortByWeaponType, sortByWeapon: false })}
+            >
+              <span className="text-zinc-400 group-hover:text-zinc-200">{t("Sort by Weapon Type")}</span>
+              <div className={`w-10 h-5 rounded-full relative transition-colors ${sortByWeaponType ? "bg-indigo-600" : "bg-zinc-700"}`}>
+                <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeaponType ? "translate-x-5" : ""}`} />
+              </div>
+            </button>
+          </div>
+        </div>
+      )}
       </div>
 
       <div className={`flex-1 overflow-y-auto p-4 custom-scrollbar ${getPlayerGridClass(config.width)}`}>
@@ -229,7 +347,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
         ))}
         {filteredPlayers.length === 0 && (
           <div className={`text-center text-zinc-500 text-sm py-8 ${config.width > 1 ? `col-span-${config.width}` : ''}`}>
-            No players found
+            {t("No players found")}
           </div>
         )}
       </div>
@@ -271,6 +389,16 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
             ))}
           </div>
         </>
+      )}
+      
+      {isItemSelectorOpen && (
+        <ItemSpellSelector
+          onSelect={(name) => {
+            updateColumnFilters(config.id, { searchItem: name });
+            setIsItemSelectorOpen(false);
+          }}
+          onClose={() => setIsItemSelectorOpen(false)}
+        />
       )}
     </div>
   );

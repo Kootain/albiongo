@@ -97,7 +97,7 @@ export const ItemSpellSelector: React.FC<ItemSpellSelectorProps> = ({ onSelect, 
                     <span className={`text-[10px] px-1.5 py-0.5 rounded uppercase font-bold tracking-wider ${
                       entry.type === 'item' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-400'
                     }`}>
-                      {entry.type}
+                      {t(entry.type)}
                     </span>
                     <span className="text-xs text-zinc-600 font-mono">#{id}</span>
                   </div>

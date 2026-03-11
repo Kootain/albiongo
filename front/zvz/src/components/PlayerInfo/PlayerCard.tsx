@@ -1,8 +1,9 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Player } from "../../types";
-import { getItem, getSpell, getLocalizedText } from "../../utils/dataManager";
+import { getItem, getSpell, getLocalizedText, getWeaponType } from "../../utils/dataManager";
 import { PlayerDetailsModal } from "./PlayerDetailsModal";
+import { Shield, Heart, HandHelping, Swords, Target } from "lucide-react";
 
 interface PlayerCardProps {
   player: Player;
@@ -11,6 +12,30 @@ interface PlayerCardProps {
 export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
   const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
+
+  const getWeaponTypeIcon = (weaponId: number) => {
+    if (!weaponId) return null;
+    const item = getItem(weaponId);
+    if (!item) return null;
+    
+    const nameZH = item.Name && item.Name['ZH-CN'] ? item.Name['ZH-CN'] : '';
+    const type = getWeaponType(nameZH);
+
+    switch (type) {
+      case "坦克":
+        return <Shield size={14} className="text-blue-400" title={t("Tank")} />;
+      case "治疗":
+        return <Heart size={14} className="text-green-400" title={t("Healer")} />;
+      case "辅助":
+        return <HandHelping size={14} className="text-orange-400" title={t("Support")} />;
+      case "近战输出":
+        return <Swords size={14} className="text-red-400" title={t("Melee DPS")} />;
+      case "远程输出":
+        return <Target size={14} className="text-red-400" title={t("Ranged DPS")} />;
+      default:
+        return null;
+    }
+  };
 
   const renderItem = (eqId: number, spellIds: number[], slotName: string) => {
     if (eqId <= 0) return (
@@ -32,6 +57,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
 
     return (
       <div className="group relative flex items-center" title={tooltipText}>
+        <img src={`https://render.albiononline.com/v1/item/${item.UniqueName}`} className="w-8 h-8 mr-2 object-contain" alt={itemName} />
         <div className="text-sm text-zinc-300 truncate">
           <span className="text-indigo-400/80 mr-1">{item.Tier}.{item.Enchant}</span>
           {itemName}
@@ -40,6 +66,8 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
     );
   };
 
+  const weaponId = (player.Equipments || [])[0];
+
   return (
     <>
       <div 
@@ -47,9 +75,12 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
         onClick={() => setShowModal(true)}
       >
         <div 
-          className="flex items-baseline gap-1.5 px-1 overflow-hidden"
+          className="flex items-center gap-1.5 px-1 overflow-hidden"
           title={[player.Name, player.AllianceName ? `[${player.AllianceName}]` : '', player.GuildName].filter(Boolean).join(' ')}
         >
+          <div className="shrink-0 flex items-center justify-center w-4 h-4">
+             {getWeaponTypeIcon(weaponId)}
+          </div>
           <span className="font-semibold text-zinc-100 shrink-0 truncate">{player.Name}</span>
           {(player.AllianceName || player.GuildName) && (
             <span className="text-xs text-zinc-400 truncate">
