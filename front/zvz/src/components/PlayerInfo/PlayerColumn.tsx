@@ -3,6 +3,7 @@ import { useTranslation } from "react-i18next";
 import { usePlayerStore, PlayerColumnConfig } from "../../store/usePlayerStore";
 import { PlayerCard } from "./PlayerCard";
 import { X, Search, ChevronDown, ChevronRight, Check, Filter } from "lucide-react";
+import { FilterInput } from "./FilterInput";
 
 import { ItemSpellSelector } from "../FilterConfig/ItemSpellSelector";
 
@@ -40,8 +41,14 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
 
   const filteredPlayers = useMemo(() => {
     const result = players.filter((p) => {
-      if (filterGuild && p.GuildName !== filterGuild) return false;
-      if (filterAlliance && p.AllianceName !== filterAlliance) return false;
+      if (filterGuild) {
+        const guilds = filterGuild.split(',');
+        if (!guilds.includes(p.GuildName)) return false;
+      }
+      if (filterAlliance) {
+        const alliances = filterAlliance.split(',');
+        if (!alliances.includes(p.AllianceName)) return false;
+      }
       if (
         searchName &&
         !p.Name.toLowerCase().includes(searchName.toLowerCase())
@@ -244,104 +251,55 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
           <div className="px-4 pb-4 space-y-3">
             <div className={`grid gap-3 ${getFilterGridClass(config.width)}`}>
               <div className="relative">
-                <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-                  size={14}
-                />
-                <input
-                  type="text"
-                  autoComplete="off"
-                  list={`players-${config.id}`}
+                <FilterInput
                   placeholder={t("Search Player")}
                   value={searchName}
-                  onChange={(e) => updateColumnFilters(config.id, { searchName: e.target.value })}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full"
+                  onChange={(val) => updateColumnFilters(config.id, { searchName: String(val) })}
+                  suggestions={players.map((p) => p.Name)}
+                  onClear={() => updateColumnFilters(config.id, { searchName: "" })}
                 />
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
-                <datalist id={`players-${config.id}`}>
-                  {players.map((p) => (
-                    <option key={p.Name} value={p.Name} />
-                  ))}
-                </datalist>
               </div>
 
               <div className="relative max-w-[240px]">
-                <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-                  size={14}
-                />
-                <input
-                  type="text"
+                <FilterInput
                   placeholder={t("Filter by Equipment")}
                   value={searchItem}
-                  onChange={(e) => updateColumnFilters(config.id, { searchItem: e.target.value })}
+                  onChange={(val) => updateColumnFilters(config.id, { searchItem: String(val) })}
+                  readOnly={true}
                   onClick={() => setIsItemSelectorOpen(true)}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                  onClear={() => updateColumnFilters(config.id, { searchItem: "" })}
                 />
-                {searchItem ? (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      updateColumnFilters(config.id, { searchItem: "" });
-                    }}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-                  >
-                    <X size={14} />
-                  </button>
-                ) : (
-                  <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none rotate-90" size={14} />
-                )}
               </div>
 
               <div className="relative">
-                <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-                  size={14}
-                />
-                <input
-                  list={`guilds-${config.id}`}
-                  value={filterGuild}
-                  onChange={(e) => updateColumnFilters(config.id, { filterGuild: e.target.value })}
+                <FilterInput
                   placeholder={t("Guild")}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full"
+                  value={filterGuild}
+                  onChange={(val) => updateColumnFilters(config.id, { filterGuild: String(val) })}
+                  suggestions={guilds}
+                  multiSelect={true}
+                  onClear={() => updateColumnFilters(config.id, { filterGuild: "" })}
                 />
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
-                <datalist id={`guilds-${config.id}`}>
-                  {guilds.map((g) => (
-                    <option key={g} value={g} />
-                  ))}
-                </datalist>
               </div>
 
               <div className="relative">
-                <Search
-                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-                  size={14}
-                />
-                <input
-                  list={`alliances-${config.id}`}
-                  value={filterAlliance}
-                  onChange={(e) => updateColumnFilters(config.id, { filterAlliance: e.target.value })}
+                <FilterInput
                   placeholder={t("Alliance")}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full"
+                  value={filterAlliance}
+                  onChange={(val) => updateColumnFilters(config.id, { filterAlliance: String(val) })}
+                  suggestions={alliances}
+                  multiSelect={true}
+                  onClear={() => updateColumnFilters(config.id, { filterAlliance: "" })}
                 />
-                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
-                <datalist id={`alliances-${config.id}`}>
-                  {alliances.map((a) => (
-                    <option key={a} value={a} />
-                  ))}
-                </datalist>
               </div>
 
               <div className="relative">
-                <input
+                <FilterInput
                   type="number"
-                  min="0"
-                  max="20"
-                  value={minPLevel || ""}
-                  onChange={(e) => updateColumnFilters(config.id, { minPLevel: e.target.value ? parseInt(e.target.value) : 0 })}
                   placeholder={t("Min P-Level")}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                  value={minPLevel || 0}
+                  onChange={(val) => updateColumnFilters(config.id, { minPLevel: Number(val) })}
+                  onClear={() => updateColumnFilters(config.id, { minPLevel: 0 })}
                 />
               </div>
             </div>
