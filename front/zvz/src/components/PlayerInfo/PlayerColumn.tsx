@@ -236,67 +236,57 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
         
         {!isFiltersCollapsed && (
           <div className="px-4 pb-4 space-y-3">
-            <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-                size={14}
-              />
-              <input
-                type="text"
-                list={`players-${config.id}`}
-                placeholder={t("Search Player")}
-                value={searchName}
-                onChange={(e) => updateColumnFilters(config.id, { searchName: e.target.value })}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full"
-              />
-              <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
-              <datalist id={`players-${config.id}`}>
-                {players.map((p) => (
-                  <option key={p.Name} value={p.Name} />
-                ))}
-              </datalist>
-            </div>
-
-            <div className="relative">
-              <Search
-                className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
-                size={14}
-              />
-              <input
-                type="text"
-                readOnly
-                placeholder={t("Filter by Equipment")}
-                value={searchItem}
-                onClick={() => setIsItemSelectorOpen(true)}
-                className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
-              />
-              {searchItem ? (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    updateColumnFilters(config.id, { searchItem: "" });
-                  }}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
-                >
-                  <X size={14} />
-                </button>
-              ) : (
-                <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none rotate-90" size={14} />
-              )}
-            </div>
-
             <div className={`grid gap-3 ${config.width >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
               <div className="relative">
-                <input
-                  type="number"
-                  min="0"
-                  max="20"
-                  value={minPLevel || ""}
-                  onChange={(e) => updateColumnFilters(config.id, { minPLevel: e.target.value ? parseInt(e.target.value) : 0 })}
-                  placeholder={t("Min P-Level")}
-                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+                  size={14}
                 />
+                <input
+                  type="text"
+                  autoComplete="off"
+                  list={`players-${config.id}`}
+                  placeholder={t("Search Player")}
+                  value={searchName}
+                  onChange={(e) => updateColumnFilters(config.id, { searchName: e.target.value })}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full"
+                />
+                <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
+                <datalist id={`players-${config.id}`}>
+                  {players.map((p) => (
+                    <option key={p.Name} value={p.Name} />
+                  ))}
+                </datalist>
               </div>
+
+              <div className="relative">
+                <Search
+                  className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
+                  size={14}
+                />
+                <input
+                  type="text"
+                  placeholder={t("Filter by Equipment")}
+                  value={searchItem}
+                  onChange={(e) => updateColumnFilters(config.id, { searchItem: e.target.value })}
+                  onClick={() => setIsItemSelectorOpen(true)}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors cursor-pointer"
+                />
+                {searchItem ? (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      updateColumnFilters(config.id, { searchItem: "" });
+                    }}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-zinc-300"
+                  >
+                    <X size={14} />
+                  </button>
+                ) : (
+                  <ChevronRight className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none rotate-90" size={14} />
+                )}
+              </div>
+
               <div className="relative">
                 <Search
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"
@@ -306,7 +296,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                   list={`guilds-${config.id}`}
                   value={filterGuild}
                   onChange={(e) => updateColumnFilters(config.id, { filterGuild: e.target.value })}
-                  placeholder={`${t("Guild")}`}
+                  placeholder={t("Guild")}
                   className="w-full bg-zinc-950 border border-zinc-800 rounded-lg pl-9 pr-8 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors [&::-webkit-calendar-picker-indicator]:opacity-0 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:absolute [&::-webkit-calendar-picker-indicator]:right-0 [&::-webkit-calendar-picker-indicator]:w-8 [&::-webkit-calendar-picker-indicator]:h-full"
                 />
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
@@ -331,36 +321,48 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                 />
                 <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none" size={14} />
                 <datalist id={`alliances-${config.id}`}>
-                {alliances.map((a) => (
-                  <option key={a} value={a} />
-                ))}
-              </datalist>
+                  {alliances.map((a) => (
+                    <option key={a} value={a} />
+                  ))}
+                </datalist>
+              </div>
+
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  value={minPLevel || ""}
+                  onChange={(e) => updateColumnFilters(config.id, { minPLevel: e.target.value ? parseInt(e.target.value) : 0 })}
+                  placeholder={t("Min P-Level")}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+              </div>
+            </div>
+
+            <div className={`grid gap-3 ${config.width >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <button 
+                className="flex items-center justify-between w-full p-2 text-sm rounded-lg bg-zinc-950/50 hover:bg-zinc-950 transition-colors group"
+                onClick={() => updateColumnFilters(config.id, { sortByWeapon: !sortByWeapon, sortByWeaponType: false })}
+              >
+                <span className="text-zinc-400 group-hover:text-zinc-200">{t("Sort by Weapon ID")}</span>
+                <div className={`w-10 h-5 rounded-full relative transition-colors ${sortByWeapon ? "bg-indigo-600" : "bg-zinc-700"}`}>
+                  <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeapon ? "translate-x-5" : ""}`} />
+                </div>
+              </button>
+
+              <button 
+                className="flex items-center justify-between w-full p-2 text-sm rounded-lg bg-zinc-950/50 hover:bg-zinc-950 transition-colors group"
+                onClick={() => updateColumnFilters(config.id, { sortByWeaponType: !sortByWeaponType, sortByWeapon: false })}
+              >
+                <span className="text-zinc-400 group-hover:text-zinc-200">{t("Sort by Weapon Type")}</span>
+                <div className={`w-10 h-5 rounded-full relative transition-colors ${sortByWeaponType ? "bg-indigo-600" : "bg-zinc-700"}`}>
+                  <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeaponType ? "translate-x-5" : ""}`} />
+                </div>
+              </button>
             </div>
           </div>
-
-          <div className="flex flex-col gap-2 mt-2">
-            <button 
-              className="flex items-center justify-between w-full p-2 text-sm rounded-lg bg-zinc-950/50 hover:bg-zinc-950 transition-colors group"
-              onClick={() => updateColumnFilters(config.id, { sortByWeapon: !sortByWeapon, sortByWeaponType: false })}
-            >
-              <span className="text-zinc-400 group-hover:text-zinc-200">{t("Sort by Weapon ID")}</span>
-              <div className={`w-10 h-5 rounded-full relative transition-colors ${sortByWeapon ? "bg-indigo-600" : "bg-zinc-700"}`}>
-                <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeapon ? "translate-x-5" : ""}`} />
-              </div>
-            </button>
-
-            <button 
-              className="flex items-center justify-between w-full p-2 text-sm rounded-lg bg-zinc-950/50 hover:bg-zinc-950 transition-colors group"
-              onClick={() => updateColumnFilters(config.id, { sortByWeaponType: !sortByWeaponType, sortByWeapon: false })}
-            >
-              <span className="text-zinc-400 group-hover:text-zinc-200">{t("Sort by Weapon Type")}</span>
-              <div className={`w-10 h-5 rounded-full relative transition-colors ${sortByWeaponType ? "bg-indigo-600" : "bg-zinc-700"}`}>
-                <div className={`absolute top-1 left-1 w-3 h-3 rounded-full bg-white transition-transform ${sortByWeaponType ? "translate-x-5" : ""}`} />
-              </div>
-            </button>
-          </div>
-        </div>
-      )}
+        )}
       </div>
 
       <div className={`flex-1 overflow-y-auto p-4 custom-scrollbar ${getPlayerGridClass(config.width)}`}>
