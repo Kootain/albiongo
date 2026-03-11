@@ -145,16 +145,18 @@ export const useWebSocket = () => {
       };
 
       let isClosed = false;
-      ws.onclose = () => {
+      ws.onclose = (event) => {
         if (isClosed) return;
         isClosed = true;
-        console.log("WebSocket disconnected, reconnecting...");
+        console.log(`WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason}, WasClean: ${event.wasClean}`);
+        console.log("Reconnecting...");
         setTimeout(connect, 3000);
       };
 
       wsRef.current = ws;
 
       return () => {
+        console.log("Frontend actively closing WebSocket connection");
         isClosed = true;
         ws.close();
       };

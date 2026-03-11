@@ -249,14 +249,22 @@ func (l *listener) onReliableCommand(command *photon.PhotonCommand) {
 			}
 		}
 	case photon.EventDataType:
-		if val, ok := params[252]; ok {
-			code := int(val.(int16))
-			log.Debugf("EventDataType: Code %d", code)
-			decodedObject, err = l.decoder.DecodeEvent(code, params)
-			if err != nil && !ConfigGlobal.DebugIgnoreDecodingErrors {
-				log.Errorf("EventDataType: ERROR - %v", err)
-			}
+		val := params[252]
+		code, ok := val.(int16)
+		if !ok {
+			code = int16(msg.EventCode)
 		}
+		// drop move event
+		if code == 3 {
+			break
+		}
+		log.Debugf("EventDataType: Code %d", code)
+
+		decodedObject, err = l.decoder.DecodeEvent(int(code), params)
+		if err != nil && !ConfigGlobal.DebugIgnoreDecodingErrors {
+			log.Errorf("EventDataType: ERROR - %v", err)
+		}
+
 	default:
 		err = fmt.Errorf("unsupported message type: %v, data: %v", msg.Type, base64.StdEncoding.EncodeToString(msg.Data))
 	}

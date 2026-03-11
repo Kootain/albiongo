@@ -1,7 +1,5 @@
 package protocol
 
-import "albiongo/pkg/game"
-
 //go:generate stringer -type=ProtocolType
 type ProtocolType int
 
@@ -14,7 +12,6 @@ const (
 type Command interface {
 	GetType() ProtocolType
 	SetType(ProtocolType)
-	Init(game.IGame) error
 }
 
 type Operation interface {

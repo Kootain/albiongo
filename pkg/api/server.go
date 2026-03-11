@@ -125,6 +125,11 @@ func (s *APIServer) handleWebSocket(c *gin.Context) {
 		for {
 			_, _, err := conn.ReadMessage()
 			if err != nil {
+				if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
+					logrus.Errorf("Websocket unexpected close error: %v", err)
+				} else {
+					logrus.Infof("Websocket closed: %v", err)
+				}
 				break
 			}
 		}
