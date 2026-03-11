@@ -20,7 +20,7 @@ func (i *Item) init() {
 		tier, _ := strconv.Atoi(i.UniqueName[1:2])
 		tmp := strings.Split(i.UniqueName, "_")
 		// slot := tmp[1]
-		name := strings.Join(tmp[2:], "_")
+		name := strings.Join(tmp[1:], "_")
 
 		tmp = strings.Split(name, "@")
 		if len(tmp) > 1 {

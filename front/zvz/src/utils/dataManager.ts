@@ -43,6 +43,14 @@ export const getSpell = (id: number): SpellData | undefined => {
   return spellMap.get(id);
 };
 
+export const getAllItems = (): ItemData[] => {
+  return Array.from(itemMap.values());
+};
+
+export const getAllSpells = (): SpellData[] => {
+  return Array.from(spellMap.values());
+};
+
 export const getLocalizedText = (localizedText: LocalizedText | undefined): string => {
   if (!localizedText) return '';
   const lang = i18n.language === 'zh' ? 'ZH-CN' : 'EN-US';

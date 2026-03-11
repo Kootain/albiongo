@@ -138,6 +138,9 @@ func (s *APIServer) Broadcast(data interface{}) {
 	for client := range s.clients {
 		select {
 		case client.send <- data:
+			if data == nil {
+				logrus.Warn("Broadcasting nil data")
+			}
 		default:
 			// If the channel is full, we might want to drop the message or disconnect the client
 			// For now, let's just drop it to prevent blocking

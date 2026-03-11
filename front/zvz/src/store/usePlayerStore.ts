@@ -48,19 +48,37 @@ export const usePlayerStore = create<PlayerStore>()(
       },
       addOrUpdatePlayer: (player) =>
         set((state) => {
-          const sanitizedPlayer = {
-            ...player,
-            Equipments: player.Equipments || [],
-            Spells: player.Spells || []
-          };
           const existingIndex = state.players.findIndex(
-            (p) => p.Name === sanitizedPlayer.Name,
+            (p) => p.Name === player.Name,
           );
           let newPlayers;
           if (existingIndex >= 0) {
             newPlayers = [...state.players];
-            newPlayers[existingIndex] = { ...newPlayers[existingIndex], ...sanitizedPlayer };
+            // Only update fields that are present and not empty/null in the new player object
+            // For arrays like Equipments/Spells, we check if they have length > 0
+            const existingPlayer = newPlayers[existingIndex];
+            const updatedPlayer = { ...existingPlayer };
+
+            if (player.GuildName) updatedPlayer.GuildName = player.GuildName;
+            if (player.AllianceName) updatedPlayer.AllianceName = player.AllianceName;
+            
+            // For Equipments and Spells, check if they are provided and valid
+            if (player.Equipments && player.Equipments.length > 0 && !player.Equipments.every(id => id === 0)) {
+               updatedPlayer.Equipments = player.Equipments;
+            }
+            if (player.Spells && player.Spells.length > 0 && !player.Spells.every(id => id === 0)) {
+               updatedPlayer.Spells = player.Spells;
+            }
+
+            newPlayers[existingIndex] = updatedPlayer;
           } else {
+            const sanitizedPlayer = {
+                Name: player.Name,
+                GuildName: player.GuildName || "",
+                AllianceName: player.AllianceName || "",
+                Equipments: player.Equipments || [],
+                Spells: player.Spells || []
+            };
             newPlayers = [...state.players, sanitizedPlayer];
           }
           const guilds = Array.from(

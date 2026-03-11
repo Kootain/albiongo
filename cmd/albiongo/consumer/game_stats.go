@@ -1,7 +1,7 @@
 package consumer
 
 import (
-	"albiongo/pkg/api"
+	"albiongo/pkg/bus"
 	"albiongo/pkg/game"
 	"albiongo/pkg/protocol"
 	"albiongo/pkg/protocol/types"
@@ -12,23 +12,19 @@ import (
 )
 
 type GameStats struct {
-	Players   *PlayerManager
-	Broadcast api.IBroadcaster
-	mu        sync.RWMutex
+	Players  *PlayerManager
+	EventBus *bus.EventBus[protocol.Command]
+	mu       sync.RWMutex
 }
 
 func (g *GameStats) Player() game.IPlayerManager {
 	return g.Players
 }
 
-func (g *GameStats) SetBroadcaster(broadcaster api.IBroadcaster) {
-	g.Broadcast = broadcaster
-}
-
-func NewGameStats(broadcaster api.IBroadcaster) *GameStats {
+func NewGameStats(eventBus *bus.EventBus[protocol.Command]) *GameStats {
 	return &GameStats{
-		Players:   NewPlayerManager(),
-		Broadcast: broadcaster,
+		Players:  NewPlayerManager(),
+		EventBus: eventBus,
 	}
 }
 
@@ -185,6 +181,6 @@ func (g *GameStats) GameStatsConsumer(ctx context.Context, event protocol.Comman
 	case *types.EventLeave:
 		g.Players.delIdx(event.ObjectID)
 	}
-	g.Broadcast.Broadcast(event)
+	g.EventBus.Publish(event)
 	return nil
 }

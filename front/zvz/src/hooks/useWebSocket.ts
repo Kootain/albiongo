@@ -11,7 +11,7 @@ import {
 } from "../events";
 import { getSpell, getItem } from "../utils/dataManager";
 import { evaluateBlockFilterStrategies } from "../filters/skillUseFilters";
-import { ItemData } from "../types";
+import { ItemData, PlayerEquipment } from "../types";
 
 const host = "127.0.0.1:8081";
 
@@ -82,6 +82,25 @@ export const useWebSocket = () => {
       }
 
       // Find if this Name + SpellID is assigned to any block, or matches the block's filter config
+      
+      const getEqItem = (idx: number) => {
+        const id = (user.Equipments || [])[idx];
+        return id && id > 0 ? getItem(id) || null : null;
+      };
+
+      const playerEquipment: PlayerEquipment = {
+        MainHand: getEqItem(0),
+        OffHand: getEqItem(1),
+        Head: getEqItem(2),
+        Chest: getEqItem(3),
+        Shoes: getEqItem(4),
+        Bag: getEqItem(5),
+        Cape: getEqItem(6),
+        Mount: getEqItem(7),
+        Potion: getEqItem(8),
+        Food: getEqItem(9),
+      };
+
       blocksRef.current.forEach((block) => {
         // 1. Check dynamic assignments from UI (legacy)
         const assignmentMatches = block.assignments.some(
@@ -89,7 +108,7 @@ export const useWebSocket = () => {
         );
         
         // 2. Check UI-configured filter strategies
-        const passesFilters = evaluateBlockFilterStrategies(block.filterStrategies || [], user, spell, item);
+        const passesFilters = evaluateBlockFilterStrategies(block.filterStrategies || [], user, spell, item, playerEquipment);
 
         if (assignmentMatches || passesFilters) {
           triggerBlock(block.id);
@@ -111,11 +130,16 @@ export const useWebSocket = () => {
 
       ws.onmessage = (event) => {
         try {
+          if (event.data === '') {
+            console.log(`Empty message received, ignoring`);
+            return;
+          }
           const data: BaseEvent = JSON.parse(event.data);
           if (data.Type === 0) {
             eventRegistry.dispatch(data);
           }
         } catch (e) {
+          console.log("Failed to parse WS message", event);
           console.error("Failed to parse WS message", e);
         }
       };

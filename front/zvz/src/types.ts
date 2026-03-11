@@ -6,6 +6,19 @@ export interface Player {
   Spells: number[];
 }
 
+export interface PlayerEquipment {
+  MainHand: ItemData | null;
+  OffHand: ItemData | null;
+  Head: ItemData | null;
+  Chest: ItemData | null;
+  Shoes: ItemData | null;
+  Bag: ItemData | null;
+  Cape: ItemData | null;
+  Mount: ItemData | null;
+  Potion: ItemData | null;
+  Food: ItemData | null;
+}
+
 export interface ColorBlockConfig {
   id: string;
   color: string;

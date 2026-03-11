@@ -6,12 +6,13 @@ import { useWebSocket } from "./hooks/useWebSocket";
 import { usePlayerStore } from "./store/usePlayerStore";
 import { useMonitorStore } from "./store/useMonitorStore";
 import { loadGameData } from "./utils/dataManager";
-import { Monitor, Users, Globe, Plus } from "lucide-react";
+import { Monitor, Users, Globe, Plus, Filter } from "lucide-react";
+import { FilterConfigPage } from "./components/FilterConfig/FilterConfigPage";
 import "./i18n";
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"monitor" | "players">("players");
+  const [activeTab, setActiveTab] = useState<"monitor" | "players" | "filters">("players");
   const addColumn = usePlayerStore((state) => state.addColumn);
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -81,6 +82,17 @@ export default function App() {
               <Users size={16} />
               {t("Player Info")}
             </button>
+            <button
+              onClick={() => setActiveTab("filters")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "filters"
+                  ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
+              }`}
+            >
+              <Filter size={16} />
+              {t("Filters")}
+            </button>
           </nav>
         </div>
         <div className="flex items-center gap-4">
@@ -136,7 +148,13 @@ export default function App() {
       </header>
 
       <main className="flex-1 overflow-hidden relative">
-        {activeTab === "monitor" ? <SkillMonitor /> : <PlayerInfo />}
+        {activeTab === "monitor" ? (
+          <SkillMonitor />
+        ) : activeTab === "players" ? (
+          <PlayerInfo />
+        ) : (
+          <FilterConfigPage />
+        )}
       </main>
     </div>
   );

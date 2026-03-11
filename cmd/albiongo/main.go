@@ -26,24 +26,22 @@ func main() {
 
 	// Initialize the EventBus
 	eventBus := bus.NewEventBus[protocol.Command](ctx)
+	gameStatsBus := bus.NewEventBus[protocol.Command](ctx)
 	decoder := decode.NewDecoder()
 	watcher := core.NewAlbionProcessWatcher(eventBus, decoder)
 
 	// Initialze services
-	// playerManager := game.GetPlayerManager()
-	// gameStats := game.NewGame(playerManager)
-	gameStats := consumer.NewGameStats(nil)
+	gameStats := consumer.NewGameStats(gameStatsBus)
 	apiServer := api.NewAPIServer(gameStats, eventBus)
-	gameStats.SetBroadcaster(apiServer)
 
 	go apiServer.Run(":8081")
 
 	// Start Consumer
-	consoleLogConsumer := eventBus.NewConsumer("ConsoleLog", 1000, consumer.ConsoleLog)
+	consoleLogConsumer := gameStatsBus.NewConsumer("ConsoleLog", 1000, consumer.ConsoleLog)
 	consoleLogConsumer.Start(ctx)
 
-	// apiConsumer := eventBus.NewConsumer("APIConsumer", 1000, consumer.APIConsumer(apiServer))
-	// apiConsumer.Start(ctx)
+	apiConsumer := gameStatsBus.NewConsumer("APIConsumer", 1000, consumer.APIConsumer(apiServer))
+	apiConsumer.Start(ctx)
 
 	statsConsumer := eventBus.NewConsumer("GameStats", 1000, gameStats.GameStatsConsumer)
 	statsConsumer.Start(ctx)
