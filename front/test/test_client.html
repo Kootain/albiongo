@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AlbionGo WebSocket Test Client</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            margin: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+        }
+        .header-controls {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .connection-panel {
+            flex: 1;
+            min-width: 300px;
+        }
+        .filter-panel {
+            flex: 2;
+            min-width: 300px;
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            border: 1px solid #eee;
+        }
+        #status {
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status-connected { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-disconnected { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-connecting { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        
+        button {
+            padding: 8px 16px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #ccc; cursor: not-allowed; }
+        button#clear-btn { background-color: #6c757d; }
+        button#clear-btn:hover { background-color: #545b62; }
+        
+        .filter-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .filter-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 5px;
+        }
+        .filter-tag {
+            background-color: #e9ecef;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .filter-tag .remove {
+            cursor: pointer;
+            color: #dc3545;
+            font-weight: bold;
+        }
+        
+        #log {
+            flex: 1;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #fafafa;
+            border-radius: 4px;
+            font-family: "Monaco", "Menlo", "Ubuntu Mono", monospace;
+            font-size: 12px;
+        }
+        .log-entry {
+            margin-bottom: 5px;
+            padding: 5px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+        .log-meta {
+            min-width: 150px;
+            color: #666;
+            flex-shrink: 0;
+        }
+        .log-content {
+            flex: 1;
+            word-break: break-all;
+        }
+        .kv-pair {
+            display: inline-block;
+            margin-right: 15px;
+            color: #444;
+        }
+        .kv-key {
+            color: #0056b3;
+            font-weight: bold;
+        }
+        .kv-value {
+            color: #28a745;
+        }
+        .log-type-tag {
+            display: inline-block;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-right: 5px;
+            background-color: #eee;
+            color: #333;
+        }
+        input[type="text"], select {
+            padding: 6px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AlbionGo Event Stream</h1>
+        
+        <div class="header-controls">
+            <div class="connection-panel">
+                <div id="status" class="status-disconnected">Status: Disconnected</div>
+                <div style="display: flex; gap: 10px;">
+                    <button id="connect-btn" onclick="connect()">Connect</button>
+                    <button id="disconnect-btn" onclick="disconnect()" disabled>Disconnect</button>
+                    <button id="clear-btn" onclick="clearLog()">Clear Log</button>
+                </div>
+            </div>
+
+            <div class="filter-panel">
+                <div class="filter-row">
+                    <label>Mode:</label>
+                    <select id="filter-mode">
+                        <option value="whitelist">Whitelist (Show Only)</option>
+                        <option value="blacklist">Blacklist (Hide These)</option>
+                    </select>
+                </div>
+                <div class="filter-row">
+                    <select id="filter-type" style="width: 150px;">
+                        <option value="0">Event (0)</option>
+                        <option value="1">Request (1)</option>
+                        <option value="2">Response (2)</option>
+                        <option value="3">Operation (3)</option>
+                    </select>
+                    <input type="number" id="filter-code" placeholder="Code (e.g. 1)" style="width: 100px;">
+                    <button onclick="addFilter()">Add Filter</button>
+                </div>
+                <div id="filter-list" class="filter-list"></div>
+            </div>
+        </div>
+
+        <div id="log"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        const statusDiv = document.getElementById('status');
+        const logDiv = document.getElementById('log');
+        const connectBtn = document.getElementById('connect-btn');
+        const disconnectBtn = document.getElementById('disconnect-btn');
+        
+        let filters = new Set(); // Stores "Type:Code" strings
+
+        function updateStatus(state, message) {
+            statusDiv.className = `status-${state}`;
+            statusDiv.textContent = `Status: ${message}`;
+            
+            if (state === 'connected') {
+                connectBtn.disabled = true;
+                disconnectBtn.disabled = false;
+            } else {
+                connectBtn.disabled = false;
+                disconnectBtn.disabled = true;
+            }
+        }
+
+        function formatValue(val) {
+            if (typeof val === 'object' && val !== null) {
+                return JSON.stringify(val);
+            }
+            return String(val);
+        }
+
+        function flattenObject(obj, prefix = '') {
+            let result = [];
+            for (let key in obj) {
+                if (typeof obj[key] === 'object' && obj[key] !== null && !Array.isArray(obj[key])) {
+                    result = result.concat(flattenObject(obj[key], prefix + key + '.'));
+                } else {
+                    result.push(`<span class="kv-pair"><span class="kv-key">${prefix}${key}:</span> <span class="kv-value">${formatValue(obj[key])}</span></span>`);
+                }
+            }
+            return result;
+        }
+
+        function shouldShow(type, code) {
+            const key = `${type}:${code}`;
+            const mode = document.getElementById('filter-mode').value;
+            
+            if (filters.size === 0) return mode === 'blacklist'; // If blacklist mode and no filters, show everything. If whitelist and no filters, show nothing? Or show everything? Usually whitelist empty means show nothing, but for usability maybe show all. Let's assume empty whitelist = show all for now, or strict? Let's make empty whitelist = show nothing to be strict, BUT user experience wise initial state should show all.
+            // Let's implement: 
+            // Whitelist: Show ONLY if in set. (If set empty, show nothing? Or show all? Let's say show all if empty for convenience)
+            // Blacklist: Show UNLESS in set.
+
+            if (filters.size === 0) return true;
+
+            if (mode === 'whitelist') {
+                return filters.has(key);
+            } else {
+                return !filters.has(key);
+            }
+        }
+
+        function addFilter() {
+            const typeInput = document.getElementById('filter-type');
+            const codeInput = document.getElementById('filter-code');
+            const type = typeInput.value;
+            const code = codeInput.value.trim();
+            
+            if (code) {
+                const key = `${type}:${code}`;
+                filters.add(key);
+                codeInput.value = '';
+                renderFilters();
+            }
+        }
+
+        function removeFilter(val) {
+            filters.delete(val);
+            renderFilters();
+        }
+
+        function renderFilters() {
+            const container = document.getElementById('filter-list');
+            container.innerHTML = '';
+            
+            const typeLabels = {
+                '0': 'Event',
+                '1': 'Request',
+                '2': 'Response',
+            };
+
+            filters.forEach(f => {
+                const [type, code] = f.split(':');
+                const label = `${typeLabels[type] || type}:${code}`;
+                
+                const tag = document.createElement('div');
+                tag.className = 'filter-tag';
+                tag.innerHTML = `${label} <span class="remove" onclick="removeFilter('${f}')">×</span>`;
+                container.appendChild(tag);
+            });
+        }
+
+        function appendLog(data) {
+            let parsed = data;
+            if (typeof data === 'string') {
+                try {
+                    parsed = JSON.parse(data);
+                } catch(e) {
+                    parsed = { raw: data };
+                }
+            }
+
+            // Determine Type and Code
+            let type = parsed.Type;
+            let code = parsed.Code;
+            
+
+            // Convert code to string for comparison
+            // code = String(code);
+
+            // Filter Check
+            if (!shouldShow(type, code)) return;
+
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            
+            const time = new Date().toLocaleTimeString();
+            const kvPairs = flattenObject(parsed).join('');
+
+            const typeLabels = {
+                '0': 'Event',
+                '1': 'Request',
+                '2': 'Response',
+                '3': 'Operation'
+            };
+            const typeLabel = typeLabels[type] || type;
+
+            entry.innerHTML = `
+                <div class="log-meta">
+                    [${time}] <span class="log-type-tag">${typeLabel}(${type}):${code}</span>
+                </div>
+                <div class="log-content">${kvPairs}</div>
+            `;
+            
+            logDiv.appendChild(entry);
+            // Auto scroll if near bottom
+            if (logDiv.scrollHeight - logDiv.scrollTop - logDiv.clientHeight < 100) {
+                logDiv.scrollTop = logDiv.scrollHeight;
+            }
+        }
+
+        function connect() {
+            if (ws) return;
+
+            updateStatus('connecting', 'Connecting...');
+            
+            try {
+                ws = new WebSocket('ws://localhost:8081/events');
+
+                ws.onopen = function() {
+                    updateStatus('connected', 'Connected');
+                    appendLog({ system: "Connection established" });
+                };
+
+                ws.onmessage = function(event) {
+                    appendLog(event.data);
+                };
+
+                ws.onclose = function(event) {
+                    ws = null;
+                    updateStatus('disconnected', `Disconnected (Code: ${event.code})`);
+                    appendLog({ system: "Connection closed" });
+                };
+
+                ws.onerror = function(error) {
+                    console.error('WebSocket Error:', error);
+                    updateStatus('disconnected', 'Error occurred');
+                };
+
+            } catch (e) {
+                updateStatus('disconnected', 'Connection failed: ' + e.message);
+                ws = null;
+            }
+        }
+
+        function disconnect() {
+            if (ws) ws.close();
+        }
+
+        function clearLog() {
+            logDiv.innerHTML = '';
+        }
+
+        // Auto connect
+        window.onload = connect;
+    </script>
+</body>
+</html>

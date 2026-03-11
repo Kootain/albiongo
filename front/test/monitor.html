@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Albion Player Monitor</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f0f2f5;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        h1, h2 {
+            margin-top: 0;
+        }
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            background-color: #1890ff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #40a9ff;
+        }
+        .player-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .player-card {
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            padding: 15px;
+            background: #fafafa;
+        }
+        .player-header {
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+        }
+        .player-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1890ff;
+        }
+        .player-guild {
+            color: #666;
+            font-size: 14px;
+        }
+        .equipment-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .equipment-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            border-bottom: 1px dashed #eee;
+            font-size: 13px;
+        }
+        .equipment-slot {
+            font-weight: bold;
+            color: #555;
+            width: 80px;
+        }
+        .equipment-name {
+            flex: 1;
+            text-align: right;
+            font-weight: bold;
+        }
+        .equipment-details {
+            flex: 1;
+            text-align: right;
+        }
+        .equipment-spells {
+            margin-top: 4px;
+        }
+        .spell-badge {
+            display: inline-block;
+            background-color: #e6f7ff;
+            color: #1890ff;
+            border: 1px solid #91d5ff;
+            border-radius: 4px;
+            padding: 2px 6px;
+            font-size: 11px;
+            margin-left: 4px;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .status-connected {
+            background-color: #f6ffed;
+            color: #52c41a;
+            border: 1px solid #b7eb8f;
+        }
+        .status-disconnected {
+            background-color: #fff1f0;
+            color: #f5222d;
+            border: 1px solid #ffa39e;
+        }
+        .update-flash {
+            animation: flash 1s ease;
+        }
+        @keyframes flash {
+            0% { background-color: #e6f7ff; }
+            100% { background-color: #fafafa; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>Albion Player Monitor <span id="ws-status" class="status-badge status-disconnected">WS: Disconnected</span></h1>
+            <div class="search-box">
+                <input type="text" id="player-name" placeholder="Enter player name to monitor...">
+                <button onclick="startMonitoring()">Monitor</button>
+            </div>
+        </div>
+
+        <div id="players-container" class="player-grid">
+            <!-- Player cards will be inserted here -->
+        </div>
+    </div>
+
+    <script src="spell_manager.js"></script>
+    <script src="item_manager.js"></script>
+    <script>
+        let ws = null;
+        let monitoredName = '';
+        let lastUpdate = {};
+        const spellManager = new SpellManager('ZH-CN'); // Initialize with Chinese by default
+        const itemManager = new ItemManager('ZH-CN');
+
+        // Load data
+        Promise.all([
+            spellManager.load('http://localhost:8081/data/spells.json'),
+            itemManager.load('http://localhost:8081/data/items.json')
+        ]).catch(console.error);
+
+        function connectWebSocket() {
+            if (ws) return;
+
+            ws = new WebSocket('ws://localhost:8081/events');
+            const statusEl = document.getElementById('ws-status');
+
+            ws.onopen = () => {
+                statusEl.textContent = 'WS: Connected';
+                statusEl.className = 'status-badge status-connected';
+            };
+
+            ws.onclose = () => {
+                statusEl.textContent = 'WS: Disconnected';
+                statusEl.className = 'status-badge status-disconnected';
+                ws = null;
+                // Auto reconnect after 3s
+                setTimeout(connectWebSocket, 3000);
+            };
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    
+                    // Check for Event (Type 0) and Code 90 (CharacterEquipmentChanged)
+                    // The server structure might vary slightly, adapting to common patterns
+                    let isEquipmentChange = false;
+                    let characterId = null;
+
+                    if (data.Code == 90 && data.Type == 0) {
+                        isEquipmentChange = true;
+                    }
+
+                    if (isEquipmentChange && monitoredName) {
+                        console.log("Equipment change detected, refreshing data...");
+                        fetchPlayerData(monitoredName);
+                    }
+                } catch (e) {
+                    console.error("Error processing WS message:", e);
+                }
+            };
+        }
+
+        async function fetchPlayerData(name) {
+            try {
+                const response = await fetch(`http://localhost:8081/players?name=${encodeURIComponent(name)}`);
+                const players = await response.json();
+                renderPlayers(players);
+            } catch (e) {
+                console.error("Failed to fetch player data:", e);
+            }
+        }
+
+        function renderPlayers(players) {
+            const container = document.getElementById('players-container');
+            container.innerHTML = '';
+
+            if (!players || players.length === 0) {
+                container.innerHTML = '<div style="grid-column: 1/-1; text-align: center; color: #999;">No players found</div>';
+                return;
+            }
+
+            players.forEach(player => {
+                const card = document.createElement('div');
+                card.className = 'player-card update-flash';
+                
+                // Format equipment
+                let equipmentHtml = '';
+                if (player.Equipments && player.Equipments.length > 0) {
+                    const slots = ['MainHand', 'OffHand', 'Head', 'Chest', 'Shoes', 'Bag', 'Cape', 'Mount', 'Potion', 'Food'];
+                    
+                    player.Equipments.forEach((itemId, index) => {
+                        if (itemId <= 0) return; // Skip empty slots
+                        
+                        const slotName = slots[index] || `Slot ${index}`;
+                        
+                        // Extract spells for this item
+                        // Spells array in Player struct usually maps to slots:
+                        // MainHand: 0, 1, 2 (Q, W, E)
+                        // Chest: 3 (R)
+                        // Head: 4 (D)
+                        // Shoes: 5 (F)
+                        // Potion: 12
+                        // Food: 13
+                        
+                        let itemSpells = [];
+                        if (player.Spells && player.Spells.length > 0) {
+                            if (index === 0) { // MainHand
+                                itemSpells = [player.Spells[0], player.Spells[1], player.Spells[2]];
+                            } else if (index === 3) { // Chest
+                                itemSpells = [player.Spells[3]];
+                            } else if (index === 2) { // Head
+                                itemSpells = [player.Spells[4]];
+                            } else if (index === 4) { // Shoes
+                                itemSpells = [player.Spells[5]];
+                            } else if (index === 8) { // Potion
+                                itemSpells = [player.Spells[12]];
+                            } else if (index === 9) { // Food
+                                itemSpells = [player.Spells[13]];
+                            }
+                        }
+                        
+                        // Filter out valid spells and generate HTML
+                        const spellsHtml = itemSpells.map(id => {
+                            if (!id || id <= 0) return ''; // Skip empty slots if desired, or show placeholder
+                            const name = spellManager.getName(id);
+                            const desc = spellManager.getDescription(id);
+                            // Simple tooltip
+                            return `<span class="spell-badge" title="${desc}">${name} (${id})</span>`;
+                        }).filter(s => s !== '').join(' ');
+                        
+                        const itemName = itemManager.getName(itemId);
+                        const itemDesc = itemManager.getDescription(itemId);
+                        const itemInfo = itemManager.getItemInfo(itemId);
+                        const tierInfo = itemInfo.tier ? `T${itemInfo.tier}${itemInfo.enchant ? '.'+itemInfo.enchant : ''}` : '';
+
+                        equipmentHtml += `
+                            <li class="equipment-item">
+                                <span class="equipment-slot">${slotName}</span>
+                                <div class="equipment-details">
+                                    <span class="equipment-name" title="${itemDesc}">${tierInfo} ${itemName} (${itemId})</span>
+                                    ${spellsHtml ? `<div class="equipment-spells">${spellsHtml}</div>` : ''}
+                                </div>
+                            </li>
+                        `;
+                    });
+                } else {
+                    equipmentHtml = '<li class="equipment-item" style="justify-content: center; color: #999;">No equipment data</li>';
+                }
+
+                card.innerHTML = `
+                    <div class="player-header">
+                        <div class="player-name">${player.Name}</div>
+                        <div class="player-guild">${player.GuildName || 'No Guild'} ${player.AllianceName ? `[${player.AllianceName}]` : ''}</div>
+                    </div>
+                    <div class="player-stats">
+                        <ul class="equipment-list">
+                            ${equipmentHtml}
+                        </ul>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function startMonitoring() {
+            const nameInput = document.getElementById('player-name');
+            const name = nameInput.value.trim();
+            
+            if (name) {
+                monitoredName = name;
+                fetchPlayerData(name);
+            }
+        }
+
+        // Initialize
+        connectWebSocket();
+        
+        // Allow Enter key to search
+        document.getElementById('player-name').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') {
+                startMonitoring();
+            }
+        });
+    </script>
+</body>
+</html>
