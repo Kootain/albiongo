@@ -4,6 +4,7 @@ import { usePlayerStore, PlayerColumnConfig } from "../../store/usePlayerStore";
 import { PlayerCard } from "./PlayerCard";
 import { X, ChevronDown, ChevronRight, Check, Filter } from "lucide-react";
 import { FilterInput } from "./FilterInput";
+import { GroupSummary } from "./GroupSummary";
 
 import { ItemSpellSelector } from "../FilterConfig/ItemSpellSelector";
 
@@ -13,6 +14,26 @@ interface PlayerColumnProps {
   config: PlayerColumnConfig;
   onRemove: () => void;
 }
+
+import { Shield, Heart, HandHelping, Swords, Target, Circle } from "lucide-react";
+
+// Helper function to get icon for group
+const getGroupIcon = (groupName: string) => {
+  switch (groupName) {
+    case "坦克":
+      return <Shield size={14} className="text-blue-400" />;
+    case "治疗":
+      return <Heart size={14} className="text-green-400" />;
+    case "辅助":
+      return <HandHelping size={14} className="text-orange-400" />;
+    case "近战输出":
+      return <Swords size={14} className="text-red-400" />;
+    case "远程输出":
+      return <Target size={14} className="text-red-400" />;
+    default:
+      return <Circle size={14} className="text-zinc-500" />;
+  }
+};
 
 export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) => {
   const { t } = useTranslation();
@@ -37,7 +58,14 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
   const [isEditingName, setIsEditingName] = useState(false);
   const [editName, setEditName] = useState("");
   const [showWidthMenu, setShowWidthMenu] = useState(false);
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+
+  const toggleGroup = (groupName: string) => {
+    setCollapsedGroups(prev => ({
+      ...prev,
+      [groupName]: !prev[groupName]
+    }));
+  };
 
   const filteredPlayers = useMemo(() => {
     const result = players.filter((p) => {
@@ -133,10 +161,72 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
       const weaponA = (a.Equipments || [])[0] || 0;
       const weaponB = (b.Equipments || [])[0] || 0;
       return weaponB - weaponA; 
-    });
-  }, [players, filterGuild, filterAlliance, searchName, sortByPLevel, sortByWeaponType]);
+    });return result;
+    }, [players, filterGuild, filterAlliance, searchName, sortByPLevel, sortByWeaponType]);
+  
+    const groupedPlayers = useMemo(() => {
+      if (!sortByWeaponType) {
+        return { "All": filteredPlayers };
+      }
+  
+      const groups: Record<string, typeof players> = {
+        "坦克": [],
+        "辅助": [],
+        "治疗": [],
+        "远程输出": [],
+        "近战输出": [],
+        "其他": []
+      };
+  
+      filteredPlayers.forEach(p => {
+        const wid = (p.Equipments || [])[0];
+        let type = "其他";
+        if (wid) {
+          const item = getItem(wid);
+          if (item) {
+            const nameZH = item.Name && item.Name['ZH-CN'] ? item.Name['ZH-CN'] : '';
+            type = getWeaponType(nameZH) || "其他";
+          }
+        }
+        if (groups[type]) {
+          groups[type].push(p);
+        } else {
+          groups["其他"].push(p);
+        }
+      });
+  
+      // Filter out empty groups
+      const result: Record<string, typeof players> = {};
+      Object.keys(groups).forEach(key => {
+        if (groups[key].length > 0) {
+          result[key] = groups[key];
+        }
+      });
+      
+      return result;
+    }, [filteredPlayers, sortByWeaponType]);
+  
+    const displayGroups = useMemo(() => {
+        if (!sortByWeaponType) return null;
+        
+        // Define desired order
+        const order = ["坦克", "辅助", "治疗", "远程输出", "近战输出", "其他"];
+        
+        const sortedGroups: {name: string, players: typeof players}[] = [];
+        
+        order.forEach(type => {
+            if (groupedPlayers[type] && groupedPlayers[type].length > 0) {
+                sortedGroups.push({
+                    name: type,
+                    players: groupedPlayers[type]
+                });
+            }
+        });
+        
+        return sortedGroups;
+    }, [groupedPlayers, sortByWeaponType]);
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
+    const handleDoubleClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     setEditName(config.name);
     setIsEditingName(true);
@@ -147,6 +237,8 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
     updateColumnName(config.id, editName);
     setIsEditingName(false);
   };
+
+  const timerRef = useRef<NodeJS.Timeout | null>(null);
 
   const handleEdgePointerDown = (e: React.PointerEvent) => {
     e.stopPropagation();
@@ -341,12 +433,53 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
         )}
       </div>
 
-      <div className={`flex-1 overflow-y-auto p-4 custom-scrollbar ${getPlayerGridClass(config.width)}`}>
-        {filteredPlayers.map((player) => (
-          <PlayerCard key={player.Name} player={player} />
-        ))}
+      <div className={`flex-1 overflow-y-auto p-4 custom-scrollbar`}>
+        {sortByWeaponType && displayGroups ? (
+          displayGroups.map((group) => (
+            <div key={group.name} className="mb-6 last:mb-0">
+              <div 
+                className="flex items-center gap-3 mb-3 px-3 py-2 cursor-pointer bg-zinc-800/40 hover:bg-zinc-800/60 rounded-lg transition-all duration-200 group select-none border border-zinc-800/50"
+                onClick={() => toggleGroup(group.name)}
+              >
+                <div className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-900/50 border border-zinc-700/50">
+                   {getGroupIcon(group.name)}
+                </div>
+                <span className="text-sm font-bold text-zinc-200 uppercase tracking-wider flex-1">{t(group.name)}</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs text-zinc-400 font-medium bg-zinc-900/50 px-2 py-0.5 rounded-md border border-zinc-700/30">
+                    {group.players.length}
+                  </span>
+                  <div className="text-zinc-500 group-hover:text-zinc-300 transition-colors">
+                    {collapsedGroups[group.name] ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
+                  </div>
+                </div>
+              </div>
+              
+              {!collapsedGroups[group.name] && (
+                <div className="pl-2 border-l-2 border-zinc-800/50 ml-2 mb-4">
+                  <div className="pl-2">
+                    <GroupSummary players={group.players} />
+                    
+                    <div className={getPlayerGridClass(config.width)}>
+                      {group.players.map((player) => (
+                        <PlayerCard key={player.Name} player={player} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className={getPlayerGridClass(config.width)}>
+            {filteredPlayers.map((player) => (
+              <PlayerCard key={player.Name} player={player} />
+            ))}
+          </div>
+        )}
+        
         {filteredPlayers.length === 0 && (
-          <div className={`text-center text-zinc-500 text-sm py-8 ${config.width > 1 ? `col-span-${config.width}` : ''}`}>
+          <div className={`text-center text-zinc-500 text-sm py-8`}>
             {t("No players found")}
           </div>
         )}

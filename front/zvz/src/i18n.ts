@@ -113,6 +113,7 @@ const resources = {
       "Sort by Weapon Type": "类型排序",
       "Sort by P-Level": "P级排序",
       "No players found": "未找到玩家",
+      "Armor": "护甲",
       "Enter name": "输入名称",
       "Double click to edit": "双击编辑",
       Filters: "过滤器",
