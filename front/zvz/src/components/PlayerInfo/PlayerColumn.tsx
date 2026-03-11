@@ -26,6 +26,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
   const filterAlliance = config.filterAlliance || "";
   const searchName = config.searchName || "";
   const searchItem = config.searchItem || "";
+  const minPLevel = config.minPLevel || 0;
   const sortByWeapon = config.sortByWeapon || false;
   const sortByWeaponType = config.sortByWeaponType || false;
 
@@ -57,6 +58,15 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
           return name.toLowerCase().includes(searchItemLower);
         });
         if (!hasItem) return false;
+      }
+
+      if (minPLevel > 0) {
+        const weaponId = (p.Equipments || [])[0];
+        if (!weaponId) return false;
+        const item = getItem(weaponId);
+        if (!item) return false;
+        const pLevel = item.Tier + item.Enchant;
+        if (pLevel < minPLevel) return false;
       }
 
       return true;
@@ -169,6 +179,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
   const filterSummary = [
     searchName ? `S: ${searchName}` : null,
     searchItem ? `I: ${searchItem}` : null,
+    minPLevel > 0 ? `P >= ${minPLevel}` : null,
     filterGuild ? `G: ${filterGuild}` : null,
     filterAlliance ? `A: ${filterAlliance}` : null,
   ].filter(Boolean).join(", ");
@@ -275,6 +286,17 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
             </div>
 
             <div className={`grid gap-3 ${config.width >= 2 ? 'grid-cols-2' : 'grid-cols-1'}`}>
+              <div className="relative">
+                <input
+                  type="number"
+                  min="0"
+                  max="20"
+                  value={minPLevel || ""}
+                  onChange={(e) => updateColumnFilters(config.id, { minPLevel: e.target.value ? parseInt(e.target.value) : 0 })}
+                  placeholder={t("Min P-Level")}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 text-sm text-zinc-200 focus:outline-none focus:border-indigo-500 transition-colors"
+                />
+              </div>
               <div className="relative">
                 <Search
                   className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"

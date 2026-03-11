@@ -10,6 +10,7 @@ export interface PlayerColumnConfig {
   filterAlliance?: string;
   searchName?: string;
   searchItem?: string;
+  minPLevel?: number;
   sortByWeapon?: boolean;
   sortByWeaponType?: boolean;
 }

@@ -74,6 +74,7 @@ const resources = {
       ID: "ID",
       item: "Item",
       spell: "Spell",
+      "Min P-Level": "Min P-Level",
     },
   },
   zh: {
@@ -148,6 +149,7 @@ const resources = {
       ID: "ID",
       item: "物品",
       spell: "技能",
+      "Min P-Level": "最小P级",
     },
   },
 };
