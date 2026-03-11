@@ -2,7 +2,7 @@ import React, { useState, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import { usePlayerStore, PlayerColumnConfig } from "../../store/usePlayerStore";
 import { PlayerCard } from "./PlayerCard";
-import { X, Search, ChevronDown, ChevronRight, Check, Filter } from "lucide-react";
+import { X, ChevronDown, ChevronRight, Check, Filter } from "lucide-react";
 import { FilterInput } from "./FilterInput";
 
 import { ItemSpellSelector } from "../FilterConfig/ItemSpellSelector";
@@ -49,11 +49,11 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
         const alliances = filterAlliance.split(',');
         if (!alliances.includes(p.AllianceName)) return false;
       }
-      if (
-        searchName &&
-        !p.Name.toLowerCase().includes(searchName.toLowerCase())
-      )
-        return false;
+      if (searchName) {
+        const names = searchName.toLowerCase().split(',');
+        const isMatch = names.some(n => p.Name.toLowerCase().includes(n.trim()));
+        if (!isMatch) return false;
+      }
 
       if (searchItem) {
         const searchItemLower = searchItem.toLowerCase();
@@ -101,13 +101,12 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
             const typeA = getWType(a);
             const typeB = getWType(b);
             
-            // Custom order: Tank -> Healer -> Support -> Melee DPS -> Ranged DPS -> Others
             const typeOrder: Record<string, number> = {
                 "坦克": 1,
-                "治疗": 2,
-                "辅助": 3,
-                "近战输出": 4,
-                "远程输出": 5
+                "辅助": 2,
+                "治疗": 3,
+                "远程输出": 4,
+                "近战输出": 5,
             };
             
             const orderA = typeOrder[typeA] || 999;
@@ -256,6 +255,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                   value={searchName}
                   onChange={(val) => updateColumnFilters(config.id, { searchName: String(val) })}
                   suggestions={players.map((p) => p.Name)}
+                  multiSelect={true}
                   onClear={() => updateColumnFilters(config.id, { searchName: "" })}
                 />
               </div>
