@@ -5,6 +5,7 @@ import (
 	"os"
 	"os/signal"
 	"syscall"
+	"time"
 
 	"albiongo/cmd/albiongo/consumer"
 	"albiongo/pkg/api"
@@ -12,6 +13,7 @@ import (
 	"albiongo/pkg/core"
 	"albiongo/pkg/protocol"
 	"albiongo/pkg/protocol/decode"
+	"albiongo/pkg/record"
 
 	"github.com/sirupsen/logrus"
 )
@@ -22,6 +24,7 @@ func main() {
 	// log.SetLevel(log.DebugLevel)
 	logrus.SetReportCaller(true)
 	logrus.SetFormatter(&CustomFormatter{})
+	core.ConfigGlobal.RecordPath = "./data"
 	ctx := context.WithoutCancel(context.Background())
 
 	// Initialize the EventBus
@@ -46,6 +49,15 @@ func main() {
 	statsConsumer := eventBus.NewConsumer("GameStats", 1000, gameStats.GameStatsConsumer)
 	statsConsumer.Start(ctx)
 
+	eventRecorder, err := record.NewEventRecorder(core.ConfigGlobal.RecordPath, 1000, 5*time.Second)
+	if err != nil {
+		logrus.Errorf("Failed to create event recorder: %v\n", err)
+		return
+	}
+
+	fileLogConsumer := gameStatsBus.NewConsumer("FileLog", 1000, consumer.FileLogFactory(eventRecorder))
+	fileLogConsumer.Start(ctx)
+
 	// Run the watcher in a goroutine
 	go func() {
 		if err := watcher.Run(); err != nil {
@@ -59,4 +71,5 @@ func main() {
 	<-c
 	logrus.Info("Shutting down...")
 	watcher.Stop()
+	eventRecorder.Close()
 }

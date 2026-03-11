@@ -6,9 +6,9 @@ import (
 )
 
 type EventBase struct {
-	Type      protocol.ProtocolType
-	Code      protocol.EventType
-	Timestamp int64
+	Type protocol.ProtocolType
+	Code protocol.EventType
+	Ts   int64
 }
 
 func (EventBase) GetType() protocol.ProtocolType {
@@ -32,7 +32,7 @@ func (e EventBase) String() string {
 }
 
 func (e *EventBase) SetTimestamp(ts int64) {
-	e.Timestamp = ts
+	e.Ts = ts
 }
 
 func NewEventBase(eventType protocol.EventType) *EventBase {
@@ -58,9 +58,9 @@ func NewDefaultEventType(code protocol.EventType, params map[uint8]interface{}) 
 }
 
 type OperationBase struct {
-	Type      protocol.ProtocolType
-	Code      protocol.OperationType
-	Timestamp int64
+	Type protocol.ProtocolType
+	Code protocol.OperationType
+	Ts   int64
 }
 
 func (base OperationBase) GetType() protocol.ProtocolType {
@@ -80,7 +80,7 @@ func (base *OperationBase) SetCode(code protocol.OperationType) {
 }
 
 func (base *OperationBase) SetTimestamp(ts int64) {
-	base.Timestamp = ts
+	base.Ts = ts
 }
 
 func (base OperationBase) String() string {

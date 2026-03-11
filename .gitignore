@@ -52,6 +52,7 @@ bin/
 # Logs
 logs
 *.log
+*.jsonl
 
 # Project specific binaries
 item_manager

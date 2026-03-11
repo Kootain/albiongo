@@ -3,12 +3,20 @@ package consumer
 import (
 	"albiongo/pkg/protocol"
 	"albiongo/pkg/protocol/types"
+	"albiongo/pkg/record"
 	"context"
 	"fmt"
 	"strings"
 
 	"github.com/sirupsen/logrus"
 )
+
+func FileLogFactory(recorder *record.EventRecorder) func(ctx context.Context, event protocol.Command) error {
+	return func(ctx context.Context, event protocol.Command) error {
+		recorder.Record(event)
+		return nil
+	}
+}
 
 func ConsoleLog(ctx context.Context, event protocol.Command) error {
 	switch event := event.(type) {
