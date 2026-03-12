@@ -90,7 +90,6 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
       }
 
       if (minPLevel > 0) {
-        console.log("########", minPLevel)
         const weaponId = (p.Equipments || [])[0];
         if (!weaponId) return false;
         const item = getItem(weaponId);
