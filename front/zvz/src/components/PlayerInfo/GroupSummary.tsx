@@ -5,6 +5,10 @@ import { useTranslation } from 'react-i18next';
 
 interface GroupSummaryProps {
   players: Player[];
+  showWeapon?: boolean;
+  showArmor?: boolean;
+  showHead?: boolean;
+  showShoes?: boolean;
 }
 
 interface ItemStat {
@@ -13,18 +17,24 @@ interface ItemStat {
   sampleItem: ItemData;
 }
 
-export const GroupSummary: React.FC<GroupSummaryProps> = ({ players }) => {
+export const GroupSummary: React.FC<GroupSummaryProps> = ({ 
+  players, 
+  showWeapon = true, 
+  showArmor = true, 
+  showHead = false, 
+  showShoes = false 
+}) => {
   const { t } = useTranslation();
 
-  const { weaponStats, armorStats } = useMemo(() => {
+  const { weaponStats, armorStats, headStats, shoesStats } = useMemo(() => {
     const wStats: Record<string, ItemStat> = {};
     const aStats: Record<string, ItemStat> = {};
+    const hStats: Record<string, ItemStat> = {};
+    const sStats: Record<string, ItemStat> = {};
 
     players.forEach(p => {
       const equip = p.Equipments || [];
-      const weaponId = equip[0];
-      const armorId = equip[3]; // Chest
-
+      
       const processItem = (id: number, stats: Record<string, ItemStat>) => {
         if (!id) return;
         const item = getItem(id);
@@ -46,21 +56,25 @@ export const GroupSummary: React.FC<GroupSummaryProps> = ({ players }) => {
         const pLevel = `${item.Tier}.${item.Enchant}`;
         stats[key].pLevels[pLevel] = (stats[key].pLevels[pLevel] || 0) + 1;
         
-        // Use highest tier as sample for better icon resolution/visual
-        if (item.Tier > stats[key].sampleItem.Tier) {
+        // Use highest tier + enchant as sample for better icon resolution/visual
+        if (item.Tier + item.Enchant > stats[key].sampleItem.Tier + stats[key].sampleItem.Enchant) {
             stats[key].sampleItem = item;
         }
       };
 
-      processItem(weaponId, wStats);
-      processItem(armorId, aStats);
+      if (showWeapon) processItem(equip[0], wStats); // Weapon
+      if (showHead) processItem(equip[2], hStats);   // Head
+      if (showArmor) processItem(equip[3], aStats);  // Chest/Armor
+      if (showShoes) processItem(equip[4], sStats);  // Shoes
     });
 
     return { 
         weaponStats: Object.values(wStats).sort((a, b) => b.count - a.count), 
-        armorStats: Object.values(aStats).sort((a, b) => b.count - a.count) 
+        armorStats: Object.values(aStats).sort((a, b) => b.count - a.count),
+        headStats: Object.values(hStats).sort((a, b) => b.count - a.count),
+        shoesStats: Object.values(sStats).sort((a, b) => b.count - a.count)
     };
-  }, [players]);
+  }, [players, showWeapon, showArmor, showHead, showShoes]);
 
   const renderItemStats = (stats: ItemStat[]) => {
     return (
@@ -101,7 +115,7 @@ export const GroupSummary: React.FC<GroupSummaryProps> = ({ players }) => {
   if (players.length === 0) return null;
 
   return (
-    <div className="bg-zinc-900/30 p-2 rounded-lg border border-zinc-800/50 mb-3 space-y-2">
+    <div className="mb-3">
        {weaponStats.length > 0 && (
          <div className="flex flex-col gap-1">
             <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider px-1">{t("Weapon")}</span>
@@ -110,7 +124,18 @@ export const GroupSummary: React.FC<GroupSummaryProps> = ({ players }) => {
             </div>
          </div>
        )}
-       {weaponStats.length > 0 && armorStats.length > 0 && (
+       {weaponStats.length > 0 && headStats.length > 0 && (
+         <div className="h-px bg-zinc-800/50 my-1"></div>
+       )}
+       {headStats.length > 0 && (
+         <div className="flex flex-col gap-1">
+            <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider px-1">{t("Head")}</span>
+            <div className="flex-1">
+                {renderItemStats(headStats)}
+            </div>
+         </div>
+       )}
+       {(weaponStats.length > 0 || headStats.length > 0) && armorStats.length > 0 && (
          <div className="h-px bg-zinc-800/50 my-1"></div>
        )}
        {armorStats.length > 0 && (
@@ -118,6 +143,17 @@ export const GroupSummary: React.FC<GroupSummaryProps> = ({ players }) => {
             <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider px-1">{t("Armor")}</span>
             <div className="flex-1">
                 {renderItemStats(armorStats)}
+            </div>
+         </div>
+       )}
+       {(weaponStats.length > 0 || headStats.length > 0 || armorStats.length > 0) && shoesStats.length > 0 && (
+         <div className="h-px bg-zinc-800/50 my-1"></div>
+       )}
+       {shoesStats.length > 0 && (
+         <div className="flex flex-col gap-1">
+            <span className="text-zinc-500 text-xs font-medium uppercase tracking-wider px-1">{t("Shoes")}</span>
+            <div className="flex-1">
+                {renderItemStats(shoesStats)}
             </div>
          </div>
        )}

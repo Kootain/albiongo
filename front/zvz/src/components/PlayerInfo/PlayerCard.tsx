@@ -1,9 +1,9 @@
 import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Player } from "../../types";
-import { getItem, getSpell, getLocalizedText, getWeaponType } from "../../utils/dataManager";
+import { getItem, getSpell, getLocalizedText, getWeaponType as getWType } from "../../utils/dataManager";
 import { PlayerDetailsModal } from "./PlayerDetailsModal";
-import { Shield, Heart, HandHelping, Swords, Target } from "lucide-react";
+import { WeaponTypeIcon } from "./WeaponTypeIcon";
 
 interface PlayerCardProps {
   player: Player;
@@ -13,28 +13,12 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
   const { t } = useTranslation();
   const [showModal, setShowModal] = useState(false);
 
-  const getWeaponTypeIcon = (weaponId: number) => {
-    if (!weaponId) return null;
+  const getWeaponType = (weaponId: number) => {
+    if (!weaponId) return "";
     const item = getItem(weaponId);
-    if (!item) return null;
-    
+    if (!item) return "";
     const nameZH = item.Name && item.Name['ZH-CN'] ? item.Name['ZH-CN'] : '';
-    const type = getWeaponType(nameZH);
-
-    switch (type) {
-      case "坦克":
-        return <Shield size={14} className="text-blue-400" title={t("Tank")} />;
-      case "治疗":
-        return <Heart size={14} className="text-green-400" title={t("Healer")} />;
-      case "辅助":
-        return <HandHelping size={14} className="text-orange-400" title={t("Support")} />;
-      case "近战输出":
-        return <Swords size={14} className="text-red-400" title={t("Melee DPS")} />;
-      case "远程输出":
-        return <Target size={14} className="text-red-400" title={t("Ranged DPS")} />;
-      default:
-        return null;
-    }
+    return getWType(nameZH) || "";
   };
 
   const renderItem = (eqId: number, spellIds: number[], slotName: string) => {
@@ -67,6 +51,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
   };
 
   const weaponId = (player.Equipments || [])[0];
+  const weaponType = getWeaponType(weaponId);
 
   return (
     <>
@@ -79,7 +64,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
           title={[player.Name, player.AllianceName ? `[${player.AllianceName}]` : '', player.GuildName].filter(Boolean).join(' ')}
         >
           <div className="shrink-0 flex items-center justify-center w-4 h-4">
-             {getWeaponTypeIcon(weaponId)}
+             {weaponType && <WeaponTypeIcon type={weaponType} />}
           </div>
           <span className="font-semibold text-zinc-100 shrink-0 truncate">{player.Name}</span>
           {(player.AllianceName || player.GuildName) && (

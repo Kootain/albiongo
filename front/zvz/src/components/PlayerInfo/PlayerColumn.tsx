@@ -5,6 +5,7 @@ import { PlayerCard } from "./PlayerCard";
 import { X, ChevronDown, ChevronRight, Check, Filter } from "lucide-react";
 import { FilterInput } from "./FilterInput";
 import { GroupSummary } from "./GroupSummary";
+import { WeaponTypeIcon } from "./WeaponTypeIcon";
 
 import { ItemSpellSelector } from "../FilterConfig/ItemSpellSelector";
 
@@ -15,24 +16,13 @@ interface PlayerColumnProps {
   onRemove: () => void;
 }
 
-import { Shield, Heart, HandHelping, Swords, Target, Circle } from "lucide-react";
-
-// Helper function to get icon for group
-const getGroupIcon = (groupName: string) => {
-  switch (groupName) {
-    case "坦克":
-      return <Shield size={14} className="text-blue-400" />;
-    case "治疗":
-      return <Heart size={14} className="text-green-400" />;
-    case "辅助":
-      return <HandHelping size={14} className="text-orange-400" />;
-    case "近战输出":
-      return <Swords size={14} className="text-red-400" />;
-    case "远程输出":
-      return <Target size={14} className="text-red-400" />;
-    default:
-      return <Circle size={14} className="text-zinc-500" />;
-  }
+// Shared type order definition
+const TYPE_ORDER: Record<string, number> = {
+  "坦克": 1,
+  "辅助": 2,
+  "治疗": 3,
+  "远程输出": 4,
+  "近战输出": 5,
 };
 
 export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) => {
@@ -51,6 +41,10 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
   const minPLevel = config.minPLevel || 0;
   const sortByPLevel = config.sortByPLevel || false;
   const sortByWeaponType = config.sortByWeaponType || false;
+  const showGroupSummaryWeapon = config.showGroupSummaryWeapon !== false;
+  const showGroupSummaryArmor = config.showGroupSummaryArmor !== false;
+  const showGroupSummaryHead = config.showGroupSummaryHead || false;
+  const showGroupSummaryShoes = config.showGroupSummaryShoes || false;
 
   const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(true);
   const [isItemSelectorOpen, setIsItemSelectorOpen] = useState(false);
@@ -122,16 +116,8 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
           const typeA = getWType(a);
           const typeB = getWType(b);
           
-          const typeOrder: Record<string, number> = {
-            "坦克": 1,
-            "辅助": 2,
-            "治疗": 3,
-            "远程输出": 4,
-            "近战输出": 5,
-          };
-          
-          const orderA = typeOrder[typeA] || 999;
-          const orderB = typeOrder[typeB] || 999;
+          const orderA = TYPE_ORDER[typeA] || 999;
+          const orderB = TYPE_ORDER[typeB] || 999;
           
           if (orderA !== orderB) return orderA - orderB;
         }
@@ -209,8 +195,11 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
     const displayGroups = useMemo(() => {
         if (!sortByWeaponType) return null;
         
-        // Define desired order
-        const order = ["坦克", "辅助", "治疗", "远程输出", "近战输出", "其他"];
+        // Use shared TYPE_ORDER keys, sorted by value
+        const order = Object.entries(TYPE_ORDER)
+            .sort(([, a], [, b]) => a - b)
+            .map(([key]) => key)
+            .concat(["其他"]);
         
         const sortedGroups: {name: string, players: typeof players}[] = [];
         
@@ -429,6 +418,33 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                 </div>
               </button>
             </div>
+
+            <div className="grid grid-cols-4 gap-2 pt-2 border-t border-zinc-800/50">
+              <button 
+                className={`text-xs px-2 py-1.5 rounded-md border transition-colors ${showGroupSummaryWeapon ? "bg-indigo-900/30 border-indigo-500/50 text-indigo-200" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}
+                onClick={() => updateColumnFilters(config.id, { showGroupSummaryWeapon: !showGroupSummaryWeapon })}
+              >
+                {t("Weapon")}
+              </button>
+              <button 
+                className={`text-xs px-2 py-1.5 rounded-md border transition-colors ${showGroupSummaryHead ? "bg-indigo-900/30 border-indigo-500/50 text-indigo-200" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}
+                onClick={() => updateColumnFilters(config.id, { showGroupSummaryHead: !showGroupSummaryHead })}
+              >
+                {t("Head")}
+              </button>
+              <button 
+                className={`text-xs px-2 py-1.5 rounded-md border transition-colors ${showGroupSummaryArmor ? "bg-indigo-900/30 border-indigo-500/50 text-indigo-200" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}
+                onClick={() => updateColumnFilters(config.id, { showGroupSummaryArmor: !showGroupSummaryArmor })}
+              >
+                {t("Armor")}
+              </button>
+              <button 
+                className={`text-xs px-2 py-1.5 rounded-md border transition-colors ${showGroupSummaryShoes ? "bg-indigo-900/30 border-indigo-500/50 text-indigo-200" : "bg-zinc-950 border-zinc-800 text-zinc-500 hover:text-zinc-300"}`}
+                onClick={() => updateColumnFilters(config.id, { showGroupSummaryShoes: !showGroupSummaryShoes })}
+              >
+                {t("Shoes")}
+              </button>
+            </div>
           </div>
         )}
       </div>
@@ -442,13 +458,14 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                 onClick={() => toggleGroup(group.name)}
               >
                 <div className="flex items-center justify-center w-6 h-6 rounded-full bg-zinc-900/50 border border-zinc-700/50">
-                   {getGroupIcon(group.name)}
+                   <WeaponTypeIcon type={group.name} />
                 </div>
-                <span className="text-sm font-bold text-zinc-200 uppercase tracking-wider flex-1">{t(group.name)}</span>
-                <div className="flex items-center gap-3">
-                  <span className="text-xs text-zinc-400 font-medium bg-zinc-900/50 px-2 py-0.5 rounded-md border border-zinc-700/30">
+                <span className="text-sm font-bold text-zinc-200 uppercase tracking-wider">{t(group.name)}</span>
+                <span className="text-xs text-zinc-400 font-medium bg-zinc-900/50 px-2 py-0.5 rounded-md border border-zinc-700/30 flex-1 w-fit flex-grow-0 ml-2">
                     {group.players.length}
-                  </span>
+                </span>
+                <div className="flex-1"></div>
+                <div className="flex items-center gap-3">
                   <div className="text-zinc-500 group-hover:text-zinc-300 transition-colors">
                     {collapsedGroups[group.name] ? <ChevronRight size={16} /> : <ChevronDown size={16} />}
                   </div>
@@ -456,9 +473,14 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
               </div>
               
               {!collapsedGroups[group.name] && (
-                <div className="pl-2 border-l-2 border-zinc-800/50 ml-2 mb-4">
-                  <div className="pl-2">
-                    <GroupSummary players={group.players} />
+                  <div className="pl-0">
+                    <GroupSummary 
+                      players={group.players} 
+                      showWeapon={showGroupSummaryWeapon}
+                      showArmor={showGroupSummaryArmor}
+                      showHead={showGroupSummaryHead}
+                      showShoes={showGroupSummaryShoes}
+                    />
                     
                     <div className={getPlayerGridClass(config.width)}>
                       {group.players.map((player) => (
@@ -466,7 +488,6 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                       ))}
                     </div>
                   </div>
-                </div>
               )}
             </div>
           ))

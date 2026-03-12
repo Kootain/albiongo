@@ -14,6 +14,10 @@ export interface PlayerColumnConfig {
   sortByPLevel?: boolean;
   sortByWeapon?: boolean;
   sortByWeaponType?: boolean;
+  showGroupSummaryWeapon?: boolean;
+  showGroupSummaryArmor?: boolean;
+  showGroupSummaryHead?: boolean;
+  showGroupSummaryShoes?: boolean;
 }
 
 interface PlayerStore {
