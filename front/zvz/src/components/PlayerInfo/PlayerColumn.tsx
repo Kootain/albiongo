@@ -90,6 +90,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
       }
 
       if (minPLevel > 0) {
+        console.log("########", minPLevel)
         const weaponId = (p.Equipments || [])[0];
         if (!weaponId) return false;
         const item = getItem(weaponId);
@@ -148,7 +149,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
       const weaponB = (b.Equipments || [])[0] || 0;
       return weaponB - weaponA; 
     });return result;
-    }, [players, filterGuild, filterAlliance, searchName, sortByPLevel, sortByWeaponType]);
+    }, [players, filterGuild, filterAlliance, searchName, searchItem, minPLevel, sortByPLevel, sortByWeaponType]);
   
     const groupedPlayers = useMemo(() => {
       if (!sortByWeaponType) {
