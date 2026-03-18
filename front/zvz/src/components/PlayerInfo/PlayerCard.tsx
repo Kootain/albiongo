@@ -61,7 +61,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
       >
         <div 
           className="flex items-center gap-1.5 px-1 overflow-hidden"
-          title={[player.Name, player.AllianceName ? `[${player.AllianceName}]` : '', player.GuildName].filter(Boolean).join(' ')}
+          title={[player.Name, player.AllianceName ? `[${player.AllianceName}]` : '', player.GuildName, player.UpdateTime ? ` (${new Date(player.UpdateTime).toLocaleString()})` : ''].filter(Boolean).join(' ')}
         >
           <div className="shrink-0 flex items-center justify-center w-4 h-4">
              {weaponType && <WeaponTypeIcon type={weaponType} />}

@@ -41,6 +41,7 @@ export const useWebSocket = () => {
         AllianceName: data.AllianceName || "",
         Equipments: data.EquipmentIDs || [],
         Spells: data.SpellIDs || [],
+        UpdateTime: Date.now(),
       });
     };
 
@@ -51,6 +52,7 @@ export const useWebSocket = () => {
         AllianceName: data.AllianceName || "",
         Equipments: data.EquipmentIDs || [],
         Spells: data.SpellIDs || [],
+        UpdateTime: Date.now(),
       });
     };
 

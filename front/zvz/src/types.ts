@@ -4,6 +4,7 @@ export interface Player {
   AllianceName: string;
   Equipments: number[];
   Spells: number[];
+  UpdateTime: number;
 }
 
 export interface PlayerEquipment {

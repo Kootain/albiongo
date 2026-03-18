@@ -76,10 +76,12 @@ const resources = {
       item: "Item",
       spell: "Spell",
       "Min P-Level": "Min P-Level",
+      "Recent Time": "Recent Time(min)"
     },
   },
   zh: {
     translation: {
+      "Recent Time": "更新时间(分钟)",
       "Skill Monitor": "技能释放监控",
       "Player Info": "玩家信息展示",
       Rows: "行数",

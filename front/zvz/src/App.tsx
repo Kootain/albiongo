@@ -6,13 +6,14 @@ import { useWebSocket } from "./hooks/useWebSocket";
 import { usePlayerStore } from "./store/usePlayerStore";
 import { useMonitorStore } from "./store/useMonitorStore";
 import { loadGameData } from "./utils/dataManager";
-import { Monitor, Users, Globe, Plus, Filter } from "lucide-react";
+import { Monitor, Users, Globe, Plus, Filter, History } from "lucide-react";
 import { FilterConfigPage } from "./components/FilterConfig/FilterConfigPage";
+import { BattleReplayPage } from "./components/BattleReplay/BattleReplayPage";
 import "./i18n";
 
 export default function App() {
   const { t, i18n } = useTranslation();
-  const [activeTab, setActiveTab] = useState<"monitor" | "players" | "filters">("players");
+  const [activeTab, setActiveTab] = useState<"monitor" | "players" | "filters" | "replay">("players");
   const addColumn = usePlayerStore((state) => state.addColumn);
   const [dataLoaded, setDataLoaded] = useState(false);
 
@@ -93,6 +94,17 @@ export default function App() {
               <Filter size={16} />
               {t("Filters")}
             </button>
+            <button
+              onClick={() => setActiveTab("replay")}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                activeTab === "replay"
+                  ? "bg-indigo-500/10 text-indigo-400 border border-indigo-500/20"
+                  : "text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 border border-transparent"
+              }`}
+            >
+              <History size={16} />
+              {t("Battle Replay")}
+            </button>
           </nav>
         </div>
         <div className="flex items-center gap-4">
@@ -152,8 +164,10 @@ export default function App() {
           <SkillMonitor />
         ) : activeTab === "players" ? (
           <PlayerInfo />
-        ) : (
+        ) : activeTab === "filters" ? (
           <FilterConfigPage />
+        ) : (
+          <BattleReplayPage />
         )}
       </main>
     </div>

@@ -6,6 +6,7 @@ type Player struct {
 	AllianceName string
 	Equipments   []int
 	Spells       []int
+	UpdateTime   int64
 }
 
 type IPlayerManager interface {

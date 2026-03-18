@@ -36,6 +36,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
 
   const filterGuild = config.filterGuild || "";
   const filterAlliance = config.filterAlliance || "";
+  const filterTime = config.filterTime || 0;
   const searchName = config.searchName || "";
   const searchItem = config.searchItem || "";
   const minPLevel = config.minPLevel || 0;
@@ -75,6 +76,9 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
         const names = searchName.toLowerCase().split(',');
         const isMatch = names.some(n => p.Name.toLowerCase().includes(n.trim()));
         if (!isMatch) return false;
+      }
+      if (filterTime) {
+        if (p.UpdateTime < (Date.now() - filterTime * 60 * 1000)) return false;
       }
 
       if (searchItem) {
@@ -142,12 +146,12 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
       });
     }
 
-    // Default sort by weapon ID
+    // Default sort by update time
     return result.sort((a, b) => {
-      const weaponA = (a.Equipments || [])[0] || 0;
-      const weaponB = (b.Equipments || [])[0] || 0;
-      return weaponB - weaponA; 
-    });return result;
+      const updateTimeA = a.UpdateTime || 0;
+      const updateTimeB = b.UpdateTime || 0;
+      return updateTimeB - updateTimeA; 
+    });
     }, [players, filterGuild, filterAlliance, searchName, searchItem, minPLevel, sortByPLevel, sortByWeaponType]);
   
     const groupedPlayers = useMemo(() => {
@@ -383,6 +387,16 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                   suggestions={alliances}
                   multiSelect={true}
                   onClear={() => updateColumnFilters(config.id, { filterAlliance: "" })}
+                />
+              </div>
+
+              <div className="relative">
+                <FilterInput
+                  type="number"
+                  placeholder={t("Recent Time")}
+                  value={filterTime || 0}
+                  onChange={(val) => updateColumnFilters(config.id, { filterTime: Number(val) })}
+                  onClear={() => updateColumnFilters(config.id, { filterTime: 0 })}
                 />
               </div>
 

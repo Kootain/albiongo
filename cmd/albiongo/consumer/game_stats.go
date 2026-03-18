@@ -16,6 +16,7 @@ type GameStats struct {
 	Players  *PlayerManager
 	EventBus *bus.EventBus[protocol.Command]
 	mu       sync.RWMutex
+	tmp      map[int]*game.Player
 }
 
 func (g *GameStats) Player() game.IPlayerManager {
@@ -26,6 +27,7 @@ func NewGameStats(eventBus *bus.EventBus[protocol.Command]) *GameStats {
 	return &GameStats{
 		Players:  NewPlayerManager(),
 		EventBus: eventBus,
+		tmp:      make(map[int]*game.Player),
 	}
 }
 
@@ -95,6 +97,7 @@ func (pm *PlayerManager) updatePlayerEquiments(idx int, equipments []int, spells
 	}
 	player.Equipments = equipments
 	player.Spells = spells
+	player.UpdateTime = time.Now().UnixMilli()
 	return nil
 }
 
@@ -166,6 +169,12 @@ func (g *GameStats) GameStatsConsumer(ctx context.Context, event protocol.Comman
 	// g.Players.changeHostIdx(event.ObjectID)
 	case *types.EventCharacterEquipmentChanged:
 		if err := g.Players.updatePlayerEquiments(int(event.PlayerID()), event.EquipmentIDs, event.SpellIDs); err != nil {
+			g.mu.Lock()
+			g.tmp[int(event.PlayerID())] = &game.Player{
+				Equipments: event.EquipmentIDs,
+				Spells:     event.SpellIDs,
+			}
+			g.mu.Unlock()
 			return err
 		}
 	case *types.EventNewCharacter:
@@ -175,6 +184,7 @@ func (g *GameStats) GameStatsConsumer(ctx context.Context, event protocol.Comman
 			AllianceName: event.AllianceName,
 			Equipments:   event.EquipmentIDs,
 			Spells:       event.SpellIDs,
+			UpdateTime:   time.Now().UnixMilli(),
 		}
 		g.Players.updatePlayer(event.ObjectID, player)
 
@@ -183,6 +193,14 @@ func (g *GameStats) GameStatsConsumer(ctx context.Context, event protocol.Comman
 			Name:         event.Name,
 			GuildName:    event.GuildName,
 			AllianceName: event.AllianceName,
+			UpdateTime:   time.Now().UnixMilli(),
+		}
+		g.mu.RLock()
+		tmp, ok := g.tmp[event.ObjectID]
+		g.mu.RUnlock()
+		if ok {
+			player.Equipments = tmp.Equipments
+			player.Spells = tmp.Spells
 		}
 		g.Players.newHost(event.Name, event.ObjectID, player)
 	case *types.EventLeave:

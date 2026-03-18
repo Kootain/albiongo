@@ -8,6 +8,7 @@ export interface PlayerColumnConfig {
   width: number;
   filterGuild?: string;
   filterAlliance?: string;
+  filterTime?: number;
   searchName?: string;
   searchItem?: string;
   minPLevel?: number;
@@ -78,6 +79,7 @@ export const usePlayerStore = create<PlayerStore>()(
             if (player.Spells && player.Spells.length > 0 && !player.Spells.every(id => id === 0)) {
                updatedPlayer.Spells = player.Spells;
             }
+            updatedPlayer.UpdateTime = player.UpdateTime
 
             newPlayers[existingIndex] = updatedPlayer;
           } else {
@@ -86,7 +88,8 @@ export const usePlayerStore = create<PlayerStore>()(
                 GuildName: player.GuildName || "",
                 AllianceName: player.AllianceName || "",
                 Equipments: player.Equipments || [],
-                Spells: player.Spells || []
+                Spells: player.Spells || [],
+                UpdateTime: player.UpdateTime
             };
             newPlayers = [...state.players, sanitizedPlayer];
           }
