@@ -15,6 +15,7 @@ import (
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	log "github.com/sirupsen/logrus"
+	"github.com/bytedance/gg/gslice"
 )
 
 type listener struct {
@@ -234,6 +235,9 @@ func (l *listener) onReliableCommand(command *photon.PhotonCommand) {
 		if val, ok := params[253]; ok {
 			code := int(val.(int16))
 			log.Debugf("OperationRequest: Code %d", code)
+			if gslice.Contains(ConfigGlobal.IgnoreOperationCodes, code) {
+				break
+			}
 			decodedObject, err = l.decoder.DecodeRequest(code, params)
 			if err != nil && !ConfigGlobal.DebugIgnoreDecodingErrors {
 				log.Errorf("OperationRequest: ERROR - %v", err)
@@ -243,6 +247,9 @@ func (l *listener) onReliableCommand(command *photon.PhotonCommand) {
 		if val, ok := params[253]; ok {
 			code := int(val.(int16))
 			log.Debugf("OperationResponse: Code %d", code)
+			if gslice.Contains(ConfigGlobal.IgnoreOperationCodes, code) {
+				break
+			}
 			decodedObject, err = l.decoder.DecodeResponse(code, params)
 			if err != nil && !ConfigGlobal.DebugIgnoreDecodingErrors {
 				log.Errorf("OperationResponse: ERROR - %v", err)

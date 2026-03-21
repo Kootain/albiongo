@@ -21,23 +21,55 @@ type IStatsProvider interface {
 	GetStats() bus.BusStats
 }
 
+const (
+	// Time allowed to write a message to the peer.
+	writeWait = 30 * time.Second
+
+	// Time allowed to read the next pong message from the peer.
+	pongWait = 60 * time.Second
+
+	// Send pings to peer with this period. Must be less than pongWait.
+	pingPeriod = (pongWait * 9) / 10
+
+	// Maximum message size allowed from peer.
+	maxMessageSize = 512
+
+	// Send buffer size
+	sendBufferSize = 4096
+)
+
 type Client struct {
 	conn *websocket.Conn
 	send chan interface{}
 }
 
 func (c *Client) writePump() {
+	ticker := time.NewTicker(pingPeriod)
 	defer func() {
+		ticker.Stop()
 		c.conn.Close()
 	}()
 
-	for message := range c.send {
-		c.conn.SetWriteDeadline(time.Now().Add(10 * time.Second))
-		if err := c.conn.WriteJSON(message); err != nil {
-			return
+	for {
+		select {
+		case message, ok := <-c.send:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if !ok {
+				// The hub closed the channel.
+				c.conn.WriteMessage(websocket.CloseMessage, []byte{})
+				return
+			}
+
+			if err := c.conn.WriteJSON(message); err != nil {
+				return
+			}
+		case <-ticker.C:
+			c.conn.SetWriteDeadline(time.Now().Add(writeWait))
+			if err := c.conn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				return
+			}
 		}
 	}
-	c.conn.WriteMessage(websocket.CloseMessage, []byte{})
 }
 
 type APIServer struct {
@@ -104,7 +136,7 @@ func (s *APIServer) handleWebSocket(c *gin.Context) {
 		return
 	}
 
-	client := &Client{conn: conn, send: make(chan interface{}, 256)}
+	client := &Client{conn: conn, send: make(chan interface{}, sendBufferSize)}
 
 	s.lock.Lock()
 	s.clients[client] = true
@@ -121,6 +153,10 @@ func (s *APIServer) handleWebSocket(c *gin.Context) {
 			close(client.send)
 			conn.Close()
 		}()
+
+		conn.SetReadLimit(maxMessageSize)
+		conn.SetReadDeadline(time.Now().Add(pongWait))
+		conn.SetPongHandler(func(string) error { conn.SetReadDeadline(time.Now().Add(pongWait)); return nil })
 
 		for {
 			_, _, err := conn.ReadMessage()
@@ -153,7 +189,6 @@ func (s *APIServer) Broadcast(data interface{}) {
 		}
 	}
 }
-
 func (s *APIServer) Run(addr string) error {
 	return s.engine.Run(addr)
 }

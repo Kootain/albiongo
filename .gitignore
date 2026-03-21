@@ -57,3 +57,5 @@ logs
 # Project specific binaries
 item_manager
 spell_manager
+# .env file
+.env

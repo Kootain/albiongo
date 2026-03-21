@@ -1,7 +1,10 @@
 package core
 
+import "albiongo/pkg/protocol"
+
 type configGlobal struct {
 	RecordPath                string
+	IgnoreOperationCodes      []int
 	DebugIgnoreDecodingErrors bool
 	DebugOperations           map[int]bool
 	DebugEvents               map[int]bool
@@ -12,6 +15,7 @@ type configGlobal struct {
 
 var ConfigGlobal = configGlobal{
 	RecordPath:                "",
+	IgnoreOperationCodes:      []int{int(protocol.OpGetCharacterStats)},
 	DebugIgnoreDecodingErrors: false,
 	DebugOperations:           make(map[int]bool),
 	DebugEvents:               make(map[int]bool),
