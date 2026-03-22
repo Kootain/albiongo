@@ -40,6 +40,19 @@ func (n *OrNode) String() string {
 	return fmt.Sprintf("(%s | %s)", n.Left.String(), n.Right.String())
 }
 
+// NotNode represents a logical NOT operation
+type NotNode struct {
+	Expr Node
+}
+
+func (n *NotNode) Evaluate(content string) bool {
+	return !n.Expr.Evaluate(content)
+}
+
+func (n *NotNode) String() string {
+	return fmt.Sprintf("!%s", n.Expr.String())
+}
+
 // TermNode represents a keyword matching operation
 type TermNode struct {
 	Keyword string
@@ -121,9 +134,19 @@ func (p *Parser) parseAndTerm() (Node, error) {
 	return left, nil
 }
 
-// Factor -> "(" Expression ")" | Keyword
+// Factor -> "!" Factor | "(" Expression ")" | Keyword
 func (p *Parser) parseFactor() (Node, error) {
 	p.skipWhitespace()
+
+	if p.peek() == '!' {
+		p.consume() // consume '!'
+		expr, err := p.parseFactor()
+		if err != nil {
+			return nil, err
+		}
+		return &NotNode{Expr: expr}, nil
+	}
+
 	if p.peek() == '(' {
 		p.consume() // consume '('
 		expr, err := p.parseExpression()
@@ -147,7 +170,7 @@ func (p *Parser) parseKeyword() (Node, error) {
 	// Allow any character except operators and whitespace
 	for p.pos < len(p.input) {
 		c := p.input[p.pos]
-		if c == '&' || c == '|' || c == '(' || c == ')' || isWhitespace(c) {
+		if c == '&' || c == '|' || c == '(' || c == ')' || c == '!' || isWhitespace(c) {
 			break
 		}
 		p.pos++
