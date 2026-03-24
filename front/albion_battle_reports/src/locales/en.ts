@@ -51,6 +51,9 @@ export default {
     "more": "more weapons...",
     "weaponName": "Weapon",
     "usedTimes": "Uses",
-    "winRateTable": "Win Rate"
+    "winRateTable": "Win Rate",
+    "kd": "K/D",
+    "kills": "Kills",
+    "deaths": "Deaths"
   }
 };

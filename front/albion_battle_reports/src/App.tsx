@@ -94,7 +94,7 @@ export default function App() {
     <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
       {/* Header & Search */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
-        <div className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Swords className="w-8 h-8 text-indigo-400" />
             <h1 className="text-xl font-bold tracking-tight text-white">{t('app.title')}</h1>
@@ -131,7 +131,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="max-w-[90rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Loading State */}
         {loading && (
           <div className="flex flex-col items-center justify-center py-20">
@@ -196,15 +196,16 @@ export default function App() {
               />
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-              {/* Weapon Usage Pie Chart */}
-              <div className="lg:col-span-1 bg-slate-900 border border-slate-800 rounded-2xl p-6 h-fit">
-                <h3 className="text-lg font-semibold text-white mb-6">{t('app.weaponUsage')}</h3>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              <div className="lg:col-span-1"> 
+                <h3 className="text-lg font-semibold text-white mb-4">{t('app.weaponUsage')}</h3>
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-fit">
                 <WeaponChart records={data.BattleRecords} />
+                </div>
               </div>
 
               {/* Battle History */}
-              <div className="lg:col-span-3 space-y-4">
+              <div className="lg:col-span-2 space-y-4">
                 <h3 className="text-lg font-semibold text-white mb-4">{t('app.recentBattles')}</h3>
                 <div className="space-y-3">
                   {[...data.BattleRecords]

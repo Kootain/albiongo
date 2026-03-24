@@ -51,6 +51,9 @@ export default {
     "more": "更多武器...",
     "weaponName": "武器名称",
     "usedTimes": "使用次数",
-    "winRateTable": "胜率"
+    "winRateTable": "胜率",
+    "kd": "K/D",
+    "kills": "击杀",
+    "deaths": "死亡"
   }
 };
