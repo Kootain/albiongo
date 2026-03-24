@@ -1,0 +1,50 @@
+export default {
+  "app": {
+    "title": "Albion Battle Reports",
+    "searchPlaceholder": "Search player name...",
+    "searchButton": "Search",
+    "loading": "Fetching battle records from Avalon...",
+    "errorFetch": "Failed to fetch player data. Please ensure the local server is running.",
+    "emptyTitle": "Search for a Player",
+    "emptyDesc": "Enter an Albion Online player name to view their recent Avalon battle performance, win rates, and weapon usage statistics.",
+    "recentBattles": "Recent Battles",
+    "winRate": "Win Rate",
+    "personalKD": "Personal K/D",
+    "teamKD": "Team K/D",
+    "avgTeamIP": "Avg Team IP",
+    "acrossBattles": "Across all recent battles",
+    "kills": "Kills",
+    "deaths": "Deaths",
+    "weaponUsage": "Weapon Usage & Win Rate"
+  },
+  "battle": {
+    "victory": "Victory",
+    "defeat": "Defeat",
+    "id": "ID",
+    "weapon": "Weapon",
+    "personalKD": "Personal K/D",
+    "teamKD": "Team K/D",
+    "avgTeamIP": "Avg Team IP",
+    "teammates": "Teammates",
+    "enemies": "Enemies",
+    "solo": "Solo",
+    "daysAgo": "{{count}}d ago",
+    "hoursAgo": "{{count}}h ago",
+    "minsAgo": "{{count}}m ago",
+    "equipmentDetails": "Team Equipment Details",
+    "enemyEquipmentDetails": "Enemy Equipment Details",
+    "mainHand": "Main",
+    "offHand": "Off",
+    "head": "Head",
+    "armor": "Armor",
+    "shoes": "Shoes",
+    "cape": "Cape"
+  },
+  "chart": {
+    "used": "Used",
+    "times": "times",
+    "winRate": "Win Rate",
+    "noData": "No weapon data available",
+    "more": "more"
+  }
+};

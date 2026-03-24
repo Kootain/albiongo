@@ -1,0 +1,5 @@
+{
+  "name": "Albion Battle Reports",
+  "description": "A tool to search and view Albion Online player battle reports, win rates, and weapon usage statistics.",
+  "requestFramePermissions": []
+}

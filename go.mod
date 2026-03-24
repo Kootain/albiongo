@@ -4,6 +4,7 @@ go 1.25.0
 
 require (
 	github.com/ao-data/photon-spectator v0.0.0-20260131231036-42f34c5bea4d
+	github.com/bytedance/gg v1.1.0
 	github.com/google/gopacket v1.1.19
 	github.com/gorilla/websocket v1.5.3
 	github.com/joho/godotenv v1.5.1
@@ -13,7 +14,6 @@ require (
 )
 
 require (
-	github.com/bytedance/gg v1.1.0 // indirect
 	github.com/bytedance/gopkg v0.1.3 // indirect
 	github.com/bytedance/sonic v1.15.0 // indirect
 	github.com/bytedance/sonic/loader v0.5.0 // indirect

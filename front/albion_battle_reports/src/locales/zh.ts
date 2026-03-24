@@ -1,0 +1,50 @@
+export default {
+  "app": {
+    "title": "ALBION - 阿瓦隆战斗报告",
+    "searchPlaceholder": "搜索玩家名称...",
+    "searchButton": "搜索",
+    "loading": "正在获取战斗记录...",
+    "errorFetch": "获取玩家数据失败。",
+    "emptyTitle": "搜索玩家",
+    "emptyDesc": "输入阿尔比恩 Online 玩家名称以查看他们近期7人左右的小团(阿瓦隆)战斗表现、胜率和武器使用统计。首次被搜索的用户可能需要一定时间加载数据。",
+    "recentBattles": "场近期战斗",
+    "winRate": "胜率",
+    "personalKD": "个人 K/D",
+    "teamKD": "团队 K/D",
+    "avgTeamIP": "队伍平均 IP",
+    "acrossBattles": "近期所有战斗的平均值",
+    "kills": "击杀",
+    "deaths": "死亡",
+    "weaponUsage": "武器使用与胜率"
+  },
+  "battle": {
+    "victory": "胜利",
+    "defeat": "失败",
+    "id": "ID",
+    "weapon": "武器",
+    "personalKD": "个人 K/D",
+    "teamKD": "团队 K/D",
+    "avgTeamIP": "队伍平均 IP",
+    "teammates": "队友",
+    "enemies": "敌人",
+    "solo": "单人",
+    "daysAgo": "{{count}}天前",
+    "hoursAgo": "{{count}}小时前",
+    "minsAgo": "{{count}}分钟前",
+    "equipmentDetails": "队伍装备详情",
+    "enemyEquipmentDetails": "敌方装备详情",
+    "mainHand": "主手",
+    "offHand": "副手",
+    "head": "头部",
+    "armor": "护甲",
+    "shoes": "鞋子",
+    "cape": "披风"
+  },
+  "chart": {
+    "used": "使用",
+    "times": "次",
+    "winRate": "胜率",
+    "noData": "暂无武器数据",
+    "more": "其它"
+  }
+};
