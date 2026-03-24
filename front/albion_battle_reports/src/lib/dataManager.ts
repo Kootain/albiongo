@@ -7,7 +7,8 @@ export const loadGameData = async () => {
   if (itemMap.size > 0) return; // Already loaded
 
   try {
-    const response = await fetch(`http://albion-resource.oss-cn-shanghai.aliyuncs.com/items.json`);
+    const protocol = window.location.protocol === 'https:' ? 'https' : 'http';
+    const response = await fetch(`${protocol}://albion-resource.oss-cn-shanghai.aliyuncs.com/items.json`);
     if (!response.ok) {
       throw new Error(`Failed to load items data: ${response.status}`);
     }
