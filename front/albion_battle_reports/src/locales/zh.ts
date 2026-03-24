@@ -19,6 +19,7 @@ export default {
     "weaponUsage": "武器使用与胜率",
     "wins": "胜",
     "losses": "负",
+    "loadMore": "加载更多"
   },
   "battle": {
     "victory": "胜利",
@@ -47,13 +48,23 @@ export default {
     "used": "使用",
     "times": "次",
     "winRate": "胜率",
-    "noData": "暂无武器数据",
+    "noData": "暂无数据",
     "more": "更多武器...",
     "weaponName": "武器名称",
     "usedTimes": "使用次数",
     "winRateTable": "胜率",
     "kd": "K/D",
     "kills": "击杀",
-    "deaths": "死亡"
+    "deaths": "死亡",
+    "score": "评分"
+  },
+  "roles": {
+    "MeleeDPS": "近战输出",
+    "RangedDPS": "远程输出",
+    "OffensiveTank": "进攻坦克",
+    "DefensiveTank": "防守坦克",
+    "Healer": "治疗",
+    "Support": "辅助",
+    "Unknown": "未知"
   }
 };

@@ -1,0 +1,516 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>武器分类配置器</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f5f7fa;
+            --panel-bg: #ffffff;
+            --border-color: #e4e7ed;
+            --text-main: #303133;
+            --text-secondary: #909399;
+            --tag-bg: #ecf5ff;
+            --tag-border: #d9ecff;
+            --tag-text: #409eff;
+            --danger: #f56c6c;
+        }
+
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            box-sizing: border-box;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+        }
+
+        .toolbar { 
+            margin-bottom: 20px; 
+            padding: 15px 20px; 
+            background: var(--panel-bg); 
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+            display: flex;
+            gap: 10px;
+        }
+
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            background: var(--primary-color);
+            color: white;
+            cursor: pointer;
+            font-size: 14px;
+            transition: opacity 0.2s;
+        }
+
+        button:hover { opacity: 0.8; }
+        
+        .main-container { 
+            display: flex; 
+            flex: 1; 
+            overflow: hidden; 
+            gap: 20px; 
+        }
+
+        .panel { 
+            flex: 1; 
+            display: flex; 
+            flex-direction: column; 
+            background: var(--panel-bg);
+            border-radius: 8px;
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .panel-header { 
+            margin: 0; 
+            padding: 15px 20px; 
+            background: #fafafa;
+            border-bottom: 1px solid var(--border-color); 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .count-badge {
+            background: var(--primary-color);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        .item-list { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 15px; 
+            display: flex;
+            flex-wrap: wrap;
+            align-content: flex-start;
+            gap: 8px;
+        }
+
+        .item { 
+            padding: 4px 10px; 
+            background: var(--tag-bg); 
+            border: 1px solid var(--tag-border); 
+            color: var(--tag-text);
+            border-radius: 4px; 
+            cursor: pointer; 
+            user-select: none;
+            font-size: 13px;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .item:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 2px 4px rgba(64,158,255,0.2);
+        }
+
+        .item:active { cursor: grabbing; }
+
+        .category-container { 
+            flex: 2; 
+            display: flex; 
+            flex-direction: column; 
+            overflow-y: auto; 
+            gap: 15px; 
+            padding-right: 5px;
+        }
+
+        .category { 
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px; 
+            display: flex; 
+            flex-direction: column; 
+            box-shadow: 0 2px 12px 0 rgba(0,0,0,0.02);
+        }
+
+        .category h4 { 
+            margin: 0; 
+            padding: 12px 15px; 
+            background: #fafafa; 
+            border-bottom: 1px solid var(--border-color);
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            border-radius: 8px 8px 0 0;
+            font-size: 15px;
+        }
+
+        .category .item-list { 
+            padding: 15px; 
+            min-height: 60px;
+        }
+
+        .delete-btn { 
+            background: var(--danger); 
+            padding: 4px 10px; 
+            font-size: 12px;
+        }
+
+        .drag-over { 
+            background: #f0f7ff !important; 
+            border: 2px dashed var(--primary-color); 
+        }
+
+        /* Tooltip 样式 */
+        .tooltip-menu {
+            position: absolute;
+            z-index: 1000;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            padding: 5px 0;
+            min-width: 120px;
+            display: none;
+        }
+
+        .tooltip-item {
+            padding: 8px 15px;
+            cursor: pointer;
+            font-size: 13px;
+            color: var(--text-main);
+            transition: background 0.2s;
+        }
+
+        .tooltip-item:hover {
+            background: #f5f7fa;
+            color: var(--primary-color);
+        }
+        
+        .tooltip-divider {
+            height: 1px;
+            background: var(--border-color);
+            margin: 5px 0;
+        }
+
+        /* 自定义滚动条 */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #dcdfe6; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c0c4cc; }
+    </style>
+</head>
+<body>
+    <div class="toolbar">
+        <button id="add-category-btn">添加分类</button>
+        <button id="export-btn">导出配置</button>
+        <input type="file" id="import-file" accept=".json" style="display: none;">
+        <button id="import-btn" onclick="document.getElementById('import-file').click()">导入配置</button>
+    </div>
+
+    <div class="main-container">
+        <!-- 未分类物品面板 -->
+        <div class="panel">
+            <div class="panel-header">
+                未分类物品 <span class="count-badge" id="unclassified-count">0</span>
+            </div>
+            <div class="item-list" id="unclassified-list"></div>
+        </div>
+
+        <!-- 分类面板 -->
+        <div class="category-container" id="categories-container">
+            <!-- 分类将在这里动态生成 -->
+        </div>
+    </div>
+
+    <!-- 悬浮菜单 -->
+    <div id="tooltip-menu" class="tooltip-menu"></div>
+
+    <!-- 引入 ItemManager -->
+    <script src="item_manager.js"></script>
+    <script>
+        const itemManager = new ItemManager('ZH-CN');
+        let allItems = {};
+        let categories = {}; // { categoryName: [nameId1, nameId2] }
+
+        // 拖拽和点击状态
+        let draggedItem = null;
+        let draggedFrom = null; // 'unclassified' or categoryName
+        let activeItemEl = null;
+
+        async function init() {
+            try {
+                await itemManager.load('weapons_subset.json');
+                allItems = itemManager.items;
+                render();
+            } catch (e) {
+                console.error('加载物品数据失败', e);
+                alert('加载物品数据失败，请确保您在服务器环境下运行此页面以支持 fetch 请求。');
+            }
+        }
+
+        function getUnclassifiedItems() {
+            const classifiedIds = new Set();
+            for (const cat in categories) {
+                categories[cat].forEach(id => classifiedIds.add(id));
+            }
+
+            const unclassified = [];
+            for (const id in allItems) {
+                if (!classifiedIds.has(id)) {
+                    unclassified.push(id);
+                }
+            }
+            return unclassified;
+        }
+
+        function render() {
+            hideTooltip(); // 渲染时隐藏菜单
+            
+            // 渲染未分类物品
+            const unclassifiedList = document.getElementById('unclassified-list');
+            const unclassifiedIds = getUnclassifiedItems();
+            document.getElementById('unclassified-count').innerText = unclassifiedIds.length;
+            
+            unclassifiedList.innerHTML = '';
+            unclassifiedIds.forEach(id => {
+                unclassifiedList.appendChild(createItemElement(id, 'unclassified'));
+            });
+
+            // 设置未分类区域的拖放事件
+            setupDropZone(unclassifiedList, 'unclassified');
+
+            // 渲染分类
+            const container = document.getElementById('categories-container');
+            container.innerHTML = '';
+            
+            for (const catName in categories) {
+                const catDiv = document.createElement('div');
+                catDiv.className = 'category';
+                
+                const header = document.createElement('h4');
+                header.innerHTML = `${catName} <span class="count-badge">${categories[catName].length}</span>`;
+                
+                const delBtn = document.createElement('button');
+                delBtn.className = 'delete-btn';
+                delBtn.innerText = '删除';
+                delBtn.onclick = () => deleteCategory(catName);
+                header.appendChild(delBtn);
+
+                const itemList = document.createElement('div');
+                itemList.className = 'item-list';
+                setupDropZone(itemList, catName);
+
+                categories[catName].forEach(id => {
+                    itemList.appendChild(createItemElement(id, catName));
+                });
+
+                catDiv.appendChild(header);
+                catDiv.appendChild(itemList);
+                container.appendChild(catDiv);
+            }
+        }
+
+        function createItemElement(id, source) {
+            const el = document.createElement('div');
+            el.className = 'item';
+            el.draggable = true;
+            el.innerText = itemManager.getName(id);
+            el.title = id; // 添加 title 属性以在悬停时显示 NameID
+            el.dataset.id = id;
+            
+            el.ondragstart = (e) => {
+                draggedItem = id;
+                draggedFrom = source;
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', id);
+                hideTooltip();
+            };
+
+            el.onclick = (e) => {
+                e.stopPropagation();
+                showTooltip(e, id, source);
+            };
+
+            return el;
+        }
+
+        // --- Tooltip 逻辑 ---
+        const tooltipMenu = document.getElementById('tooltip-menu');
+
+        function showTooltip(e, id, source) {
+            tooltipMenu.innerHTML = '';
+            const catNames = Object.keys(categories);
+            
+            if (catNames.length === 0 && source === 'unclassified') {
+                const emptyMsg = document.createElement('div');
+                emptyMsg.className = 'tooltip-item';
+                emptyMsg.style.color = '#999';
+                emptyMsg.style.cursor = 'default';
+                emptyMsg.innerText = '暂无分类可选';
+                tooltipMenu.appendChild(emptyMsg);
+            } else {
+                // 如果在分类中，显示移回未分类的选项
+                if (source !== 'unclassified') {
+                    const unclassItem = document.createElement('div');
+                    unclassItem.className = 'tooltip-item';
+                    unclassItem.innerText = '移至: 未分类';
+                    unclassItem.onclick = () => {
+                        moveItem(id, source, 'unclassified');
+                        hideTooltip();
+                    };
+                    tooltipMenu.appendChild(unclassItem);
+                    
+                    if (catNames.length > 1) {
+                        const divider = document.createElement('div');
+                        divider.className = 'tooltip-divider';
+                        tooltipMenu.appendChild(divider);
+                    }
+                }
+
+                // 显示其他分类
+                catNames.forEach(catName => {
+                    if (catName !== source) {
+                        const catItem = document.createElement('div');
+                        catItem.className = 'tooltip-item';
+                        catItem.innerText = `移至: ${catName}`;
+                        catItem.onclick = () => {
+                            moveItem(id, source, catName);
+                            hideTooltip();
+                        };
+                        tooltipMenu.appendChild(catItem);
+                    }
+                });
+            }
+
+            // 定位
+            tooltipMenu.style.display = 'block';
+            
+            // 确保菜单不超出视口
+            const rect = tooltipMenu.getBoundingClientRect();
+            let top = e.pageY + 10;
+            let left = e.pageX + 10;
+            
+            if (left + rect.width > window.innerWidth) {
+                left = window.innerWidth - rect.width - 10;
+            }
+            if (top + rect.height > window.innerHeight) {
+                top = window.innerHeight - rect.height - 10;
+            }
+
+            tooltipMenu.style.top = top + 'px';
+            tooltipMenu.style.left = left + 'px';
+        }
+
+        function hideTooltip() {
+            tooltipMenu.style.display = 'none';
+        }
+
+        // 点击页面其他地方隐藏菜单
+        document.addEventListener('click', hideTooltip);
+
+        // --- 拖拽逻辑 ---
+        function setupDropZone(element, targetName) {
+            element.ondragover = (e) => {
+                e.preventDefault();
+                e.dataTransfer.dropEffect = 'move';
+                element.classList.add('drag-over');
+            };
+            
+            element.ondragleave = (e) => {
+                element.classList.remove('drag-over');
+            };
+
+            element.ondrop = (e) => {
+                e.preventDefault();
+                element.classList.remove('drag-over');
+                
+                if (draggedItem && draggedFrom !== targetName) {
+                    moveItem(draggedItem, draggedFrom, targetName);
+                }
+                draggedItem = null;
+                draggedFrom = null;
+            };
+        }
+
+        function moveItem(id, from, to) {
+            // 从原处移除
+            if (from !== 'unclassified') {
+                categories[from] = categories[from].filter(itemId => itemId !== id);
+            }
+
+            // 加入新处
+            if (to !== 'unclassified') {
+                if (!categories[to].includes(id)) {
+                    categories[to].push(id);
+                }
+            }
+            
+            render();
+        }
+
+        // --- 顶部操作 ---
+        document.getElementById('add-category-btn').onclick = () => {
+            const name = prompt('请输入新分类名称：');
+            if (name && name.trim()) {
+                const catName = name.trim();
+                if (!categories[catName]) {
+                    categories[catName] = [];
+                    render();
+                } else {
+                    alert('分类已存在！');
+                }
+            }
+        };
+
+        function deleteCategory(name) {
+            if (confirm(`确定要删除分类 "${name}" 吗？分类中的物品将回到未分类。`)) {
+                delete categories[name];
+                render();
+            }
+        }
+
+        document.getElementById('export-btn').onclick = () => {
+            const dataStr = JSON.stringify(categories, null, 2);
+            const blob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'weapon_categories.json';
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
+        document.getElementById('import-file').onchange = (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    // 验证格式
+                    if (typeof imported === 'object' && !Array.isArray(imported)) {
+                        categories = imported;
+                        render();
+                    } else {
+                        alert('导入的 JSON 格式不正确，应为 Map (对象)。');
+                    }
+                } catch (err) {
+                    alert('解析 JSON 失败！');
+                }
+                // 清空 input 使得同一文件可以重复选择
+                e.target.value = '';
+            };
+            reader.readAsText(file);
+        };
+
+        // 启动应用
+        init();
+    </script>
+</body>
+</html>

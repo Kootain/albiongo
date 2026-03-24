@@ -10,8 +10,9 @@ import { AvalonBattlePerformance } from './types';
 import { loadGameData } from './lib/dataManager';
 import { calcKD } from './lib/formatters';
 import { StatCard } from './components/StatCard';
-import { WeaponChart } from './components/WeaponChart';
-import { BattleCard } from './components/BattleCard';
+import { PlayerRadarChart } from './components/PlayerRadarChart';
+import { WeaponTable } from './components/WeaponTable';
+import { BattleHistory } from './components/BattleHistory';
 
 export default function App() {
   const { t, i18n } = useTranslation();
@@ -200,20 +201,20 @@ export default function App() {
               <div className="lg:col-span-1"> 
                 <h3 className="text-lg font-semibold text-white mb-4">{t('app.weaponUsage')}</h3>
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-fit">
-                <WeaponChart records={data.BattleRecords} />
+                  {data.RadarScores && data.RadarScores.length > 0 ? (
+                    <PlayerRadarChart scores={data.RadarScores} />
+                  ) : (
+                    <div className="h-64 flex items-center justify-center text-slate-500">
+                      No radar data available
+                    </div>
+                  )}
+                  <WeaponTable records={data.BattleRecords} />
                 </div>
               </div>
 
               {/* Battle History */}
-              <div className="lg:col-span-2 space-y-4">
-                <h3 className="text-lg font-semibold text-white mb-4">{t('app.recentBattles')}</h3>
-                <div className="space-y-3">
-                  {[...data.BattleRecords]
-                    .sort((a, b) => new Date(b.StartTime).getTime() - new Date(a.StartTime).getTime())
-                    .map((record) => (
-                      <BattleCard key={record.BattleID} record={record} />
-                    ))}
-                </div>
+              <div className="lg:col-span-2">
+                <BattleHistory records={data.BattleRecords} />
               </div>
             </div>
           </div>

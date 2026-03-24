@@ -64,6 +64,11 @@ export interface PlayerBattleSummary {
   BattleID: number;
 }
 
+export interface RoleScore {
+  Role: string;
+  Score: number;
+}
+
 export interface AvalonBattlePerformance {
   PlayerName: string;
   BattleCnt: number;
@@ -73,5 +78,6 @@ export interface AvalonBattlePerformance {
   TeamDeaths: number;
   Kills: number;
   Deaths: number;
+  RadarScores: RoleScore[];
   BattleRecords: PlayerBattleSummary[];
 }

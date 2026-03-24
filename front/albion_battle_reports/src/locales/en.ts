@@ -19,6 +19,7 @@ export default {
     "weaponUsage": "Weapon Usage & Win Rate",
     "wins": "Win",
     "losses": "Lose",
+    "loadMore": "Load More"
   },
   "battle": {
     "victory": "Victory",
@@ -47,13 +48,23 @@ export default {
     "used": "Used",
     "times": "times",
     "winRate": "Win Rate",
-    "noData": "No weapon data available",
+    "noData": "No data available",
     "more": "more weapons...",
     "weaponName": "Weapon",
     "usedTimes": "Uses",
     "winRateTable": "Win Rate",
     "kd": "K/D",
     "kills": "Kills",
-    "deaths": "Deaths"
+    "deaths": "Deaths",
+    "score": "Score"
+  },
+  "roles": {
+    "MeleeDPS": "Melee DPS",
+    "RangedDPS": "Ranged DPS",
+    "OffensiveTank": "Offensive Tank",
+    "DefensiveTank": "Defensive Tank",
+    "Healer": "Healer",
+    "Support": "Support",
+    "Unknown": "Unknown"
   }
 };
