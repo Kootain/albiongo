@@ -8,6 +8,7 @@ export default {
     "emptyTitle": "Search for a Player",
     "emptyDesc": "Enter an Albion Online player name to view their recent Avalon battle performance, win rates, and weapon usage statistics.",
     "recentBattles": "Recent Battles",
+    "battleUnit": "",
     "winRate": "Win Rate",
     "personalKD": "Personal K/D",
     "teamKD": "Team K/D",
@@ -15,7 +16,9 @@ export default {
     "acrossBattles": "Across all recent battles",
     "kills": "Kills",
     "deaths": "Deaths",
-    "weaponUsage": "Weapon Usage & Win Rate"
+    "weaponUsage": "Weapon Usage & Win Rate",
+    "wins": "Win",
+    "losses": "Lose",
   },
   "battle": {
     "victory": "Victory",

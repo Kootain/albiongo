@@ -20,18 +20,43 @@ export default function App() {
   const [data, setData] = useState<AvalonBattlePerformance | null>(null);
   const [error, setError] = useState('');
 
+  // Initial load: parse URL for player name
   useEffect(() => {
     loadGameData();
-  }, []);
+    
+    const checkUrlAndSearch = () => {
+      // e.g. /player/JohnDoe or just /?player=JohnDoe
+      // Let's use search params: /?player=JohnDoe for simplicity and easier sharing
+      const params = new URLSearchParams(window.location.search);
+      const playerFromUrl = params.get('player');
+      
+      if (playerFromUrl) {
+        setSearchQuery(playerFromUrl);
+        // We cannot rely on searchQuery state here since it's asynchronous
+        // We'll call performSearch with the URL value directly
+        performSearch(playerFromUrl);
+      } else {
+        // Clear state if url is empty
+        setSearchQuery('');
+        setData(null);
+        setError('');
+      }
+    };
+
+    checkUrlAndSearch();
+
+    // Listen to browser back/forward buttons
+    window.addEventListener('popstate', checkUrlAndSearch);
+    return () => window.removeEventListener('popstate', checkUrlAndSearch);
+  }, []); // Empty dependency array to run once on mount
 
   const toggleLanguage = () => {
     const newLang = i18n.language === 'zh' ? 'en' : 'zh';
     i18n.changeLanguage(newLang);
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!searchQuery.trim()) return;
+  const performSearch = async (playerName: string) => {
+    if (!playerName.trim()) return;
 
     setLoading(true);
     setError('');
@@ -39,7 +64,7 @@ export default function App() {
 
     try {
       const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8080';
-      const response = await fetch(`${apiUrl}/api/v1/performance?player=${encodeURIComponent(searchQuery)}`);
+      const response = await fetch(`${apiUrl}/api/v1/performance?player=${encodeURIComponent(playerName)}`);
       if (!response.ok) {
         throw new Error(`Error: ${response.status} ${response.statusText}`);
       }
@@ -51,6 +76,18 @@ export default function App() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!searchQuery.trim()) return;
+
+    // Update URL without reloading the page
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('player', searchQuery.trim());
+    window.history.pushState({}, '', newUrl);
+
+    await performSearch(searchQuery.trim());
   };
 
   return (
@@ -133,7 +170,7 @@ export default function App() {
               </div>
               <div>
                 <h2 className="text-3xl font-bold text-white">{data.PlayerName}</h2>
-                <p className="text-slate-400">{data.BattleCnt} {t('app.recentBattles')}</p>
+                <p className="text-slate-400">{data.BattleCnt} {t('app.battleUnit')}{t('app.recentBattles')}</p>
               </div>
             </div>
 
@@ -142,7 +179,7 @@ export default function App() {
               <StatCard 
                 title={t('app.winRate')} 
                 value={`${((data.WinCnt / data.BattleCnt) * 100).toFixed(1)}%`}
-                subtext={`${data.WinCnt}W - ${data.LoseCnt}L`}
+                subtext={`${data.WinCnt} ${t('app.wins')} - ${data.LoseCnt} ${t('app.losses')}`}
                 icon={<TrendingUp className="w-5 h-5 text-emerald-400" />}
               />
               <StatCard 

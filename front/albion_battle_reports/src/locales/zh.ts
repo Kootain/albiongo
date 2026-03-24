@@ -7,7 +7,8 @@ export default {
     "errorFetch": "获取玩家数据失败。",
     "emptyTitle": "搜索玩家",
     "emptyDesc": "输入阿尔比恩 Online 玩家名称以查看他们近期7人左右的小团(阿瓦隆)战斗表现、胜率和武器使用统计。首次被搜索的用户可能需要一定时间加载数据。",
-    "recentBattles": "场近期战斗",
+    "recentBattles": "近期战斗",
+    "battleUnit": "场",
     "winRate": "胜率",
     "personalKD": "个人 K/D",
     "teamKD": "团队 K/D",
@@ -15,7 +16,9 @@ export default {
     "acrossBattles": "近期所有战斗的平均值",
     "kills": "击杀",
     "deaths": "死亡",
-    "weaponUsage": "武器使用与胜率"
+    "weaponUsage": "武器使用与胜率",
+    "wins": "胜",
+    "losses": "负",
   },
   "battle": {
     "victory": "胜利",
