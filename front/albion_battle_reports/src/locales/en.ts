@@ -48,6 +48,9 @@ export default {
     "times": "times",
     "winRate": "Win Rate",
     "noData": "No weapon data available",
-    "more": "more"
+    "more": "more weapons...",
+    "weaponName": "Weapon",
+    "usedTimes": "Uses",
+    "winRateTable": "Win Rate"
   }
 };

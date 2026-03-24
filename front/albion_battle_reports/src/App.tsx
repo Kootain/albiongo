@@ -175,35 +175,24 @@ export default function App() {
             </div>
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-3 gap-2 sm:gap-4">
               <StatCard 
                 title={t('app.winRate')} 
                 value={`${((data.WinCnt / data.BattleCnt) * 100).toFixed(1)}%`}
                 subtext={`${data.WinCnt} ${t('app.wins')} - ${data.LoseCnt} ${t('app.losses')}`}
-                icon={<TrendingUp className="w-5 h-5 text-emerald-400" />}
+                icon={<TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />}
               />
               <StatCard 
                 title={t('app.personalKD')} 
                 value={calcKD(data.Kills, data.Deaths)}
                 subtext={`${data.Kills} ${t('app.kills')} / ${data.Deaths} ${t('app.deaths')}`}
-                icon={<Target className="w-5 h-5 text-indigo-400" />}
+                icon={<Target className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" />}
               />
               <StatCard 
                 title={t('app.teamKD')} 
                 value={calcKD(data.TeamKills, data.TeamDeaths)}
                 subtext={`${data.TeamKills} ${t('app.kills')} / ${data.TeamDeaths} ${t('app.deaths')}`}
-                icon={<Users className="w-5 h-5 text-blue-400" />}
-              />
-              <StatCard 
-                title={t('app.avgTeamIP')} 
-                value={Math.round(
-                  data.BattleRecords.reduce((acc, r) => {
-                    const teamAvg = r.TeamMembers.reduce((sum, m) => sum + m.AverageItemPower, 0) / (r.TeamMembers.length || 1);
-                    return acc + teamAvg;
-                  }, 0) / data.BattleRecords.length
-                ).toString()}
-                subtext={t('app.acrossBattles')}
-                icon={<Shield className="w-5 h-5 text-amber-400" />}
+                icon={<Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />}
               />
             </div>
 

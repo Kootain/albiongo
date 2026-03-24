@@ -81,9 +81,14 @@ export function WeaponChart({ records }: WeaponChartProps) {
               paddingAngle={5}
               dataKey="value"
               stroke="none"
+              isAnimationActive={false}
             >
               {data.map((entry, index) => (
-                <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                <Cell 
+                  key={`cell-${index}`} 
+                  fill={COLORS[index % COLORS.length]} 
+                  style={{ outline: 'none' }}
+                />
               ))}
             </Pie>
             <Tooltip content={<CustomTooltip />} />
@@ -91,21 +96,48 @@ export function WeaponChart({ records }: WeaponChartProps) {
         </ResponsiveContainer>
       </div>
 
-      {/* Custom Legend Rendered outside Recharts to allow natural DOM flow and wrap */}
-      <ul className="flex flex-wrap justify-center gap-x-4 gap-y-3 text-xs w-full">
-        {limitedData.map((entry, index) => (
-          <li key={`item-${index}`} className="flex items-center text-slate-300">
-            <span className="w-2 h-2 rounded-full mr-2 shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
-            <span className="truncate max-w-[120px]" title={entry.name}>{entry.name}</span> 
-            <span className="ml-1 shrink-0">({entry.winRate}%)</span>
-          </li>
-        ))}
-        {hasMore && (
-          <li className="flex items-center text-slate-500 italic ml-2">
-            +{data.length - MAX_LEGEND_ITEMS} {t('chart.more', { defaultValue: 'more' })}
-          </li>
-        )}
-      </ul>
+      {/* Weapon Stats Table */}
+      <div className="overflow-x-auto w-full mt-4">
+        <table className="w-full text-sm text-left">
+          <thead className="text-xs text-slate-400 bg-slate-900/50 border-y border-slate-800">
+            <tr>
+              <th className="px-3 py-2 font-medium">{t('chart.weaponName', { defaultValue: 'Weapon' })}</th>
+              <th className="px-3 py-2 font-medium text-center">{t('chart.usedTimes', { defaultValue: 'Uses' })}</th>
+              <th className="px-3 py-2 font-medium text-right">{t('chart.winRateTable', { defaultValue: 'Win Rate' })}</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-800/50">
+            {limitedData.map((entry, index) => (
+              <tr key={`row-${index}`} className="hover:bg-slate-800/30 transition-colors">
+                <td className="px-3 py-2 flex items-center gap-2">
+                  <div className="w-2 h-2 rounded-full shrink-0" style={{ backgroundColor: COLORS[index % COLORS.length] }} />
+                  <span className="text-slate-200 truncate max-w-[140px] sm:max-w-[200px]" title={entry.name}>
+                    {entry.name}
+                  </span>
+                </td>
+                <td className="px-3 py-2 text-center text-slate-300 font-medium">
+                  {entry.value}
+                </td>
+                <td className="px-3 py-2 text-right">
+                  <span className={cn(
+                    "font-medium", 
+                    Number(entry.winRate) >= 50 ? "text-emerald-400" : "text-rose-400"
+                  )}>
+                    {entry.winRate}%
+                  </span>
+                </td>
+              </tr>
+            ))}
+            {hasMore && (
+              <tr>
+                <td colSpan={3} className="px-3 py-3 text-center text-xs text-slate-500 italic">
+                  +{data.length - MAX_LEGEND_ITEMS} {t('chart.more', { defaultValue: 'more weapons' })}
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }

@@ -48,6 +48,9 @@ export default {
     "times": "次",
     "winRate": "胜率",
     "noData": "暂无武器数据",
-    "more": "其它"
+    "more": "更多武器...",
+    "weaponName": "武器名称",
+    "usedTimes": "使用次数",
+    "winRateTable": "胜率"
   }
 };
