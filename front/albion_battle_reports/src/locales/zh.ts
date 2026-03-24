@@ -19,7 +19,12 @@ export default {
     "weaponUsage": "武器使用与胜率",
     "wins": "胜",
     "losses": "负",
-    "loadMore": "加载更多"
+    "loadMore": "加载更多",
+    "shareBtn": "分享",
+    "shareText": "快来查看我的albion阿瓦隆战斗报告！",
+    "wechatShareHint": "请点击右上角 ··· 发送给朋友",
+    "copySuccess": "链接已复制，快去分享吧！",
+    "copyFailed": "复制失败，请手动复制链接"
   },
   "battle": {
     "victory": "胜利",

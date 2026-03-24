@@ -4,11 +4,12 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Swords, Shield, Target, Users, TrendingUp, Languages } from 'lucide-react';
+import { Search, Loader2, Swords, Shield, Target, Users, TrendingUp, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AvalonBattlePerformance } from './types';
 import { loadGameData } from './lib/dataManager';
 import { calcKD } from './lib/formatters';
+import { cn } from './lib/utils';
 import { StatCard } from './components/StatCard';
 import { PlayerRadarChart } from './components/PlayerRadarChart';
 import { WeaponTable } from './components/WeaponTable';
@@ -20,6 +21,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [data, setData] = useState<AvalonBattlePerformance | null>(null);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState<{msg: string, type: 'default' | 'wechat' | 'error' | null}>({ msg: '', type: null });
 
   // Initial load: parse URL for player name
   useEffect(() => {
@@ -50,11 +52,6 @@ export default function App() {
     window.addEventListener('popstate', checkUrlAndSearch);
     return () => window.removeEventListener('popstate', checkUrlAndSearch);
   }, []); // Empty dependency array to run once on mount
-
-  const toggleLanguage = () => {
-    const newLang = i18n.language === 'zh' ? 'en' : 'zh';
-    i18n.changeLanguage(newLang);
-  };
 
   const performSearch = async (playerName: string) => {
     if (!playerName.trim()) return;
@@ -91,8 +88,82 @@ export default function App() {
     await performSearch(searchQuery.trim());
   };
 
+  const showToast = (msg: string, type: 'default' | 'wechat' | 'error' = 'default') => {
+    setToast({ msg, type });
+    setTimeout(() => setToast({ msg: '', type: null }), 3000);
+  };
+
+  const handleShare = async () => {
+    const isWechat = /MicroMessenger/i.test(navigator.userAgent);
+    const currentUrl = window.location.href;
+    const shareText = t('app.shareText', { defaultValue: '快来查看我的albion阿瓦隆战斗报告' });
+    const shareTitle = t('app.title', { defaultValue: 'Albion Avalon Report' });
+    
+    if (isWechat) {
+      showToast(t('app.wechatShareHint', { defaultValue: '请点击右上角 ··· 发送给朋友' }), 'wechat');
+      return;
+    }
+
+    // Try to use native Web Share API (Android/iOS browsers)
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: shareTitle,
+          text: shareText,
+          url: currentUrl,
+        });
+        // Note: We usually don't need a toast here because the OS shows its own share sheet
+        return;
+      } catch (err: any) {
+        // If the user cancelled the share, do not show error. 
+        // Only fallback to copy if it's an actual failure not caused by user abort.
+        if (err.name !== 'AbortError') {
+          console.error('Web Share API failed, falling back to clipboard', err);
+        } else {
+          return;
+        }
+      }
+    }
+
+    // Fallback to Clipboard copy for PC or unsupported browsers
+    const fullShareText = `${shareText}\n${currentUrl}`;
+    try {
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(fullShareText);
+        showToast(t('app.copySuccess', { defaultValue: '链接已复制，快去分享吧！' }), 'default');
+      } else {
+        const textArea = document.createElement("textarea");
+        textArea.value = fullShareText;
+        textArea.style.position = "fixed";
+        textArea.style.left = "-999999px";
+        textArea.style.top = "-999999px";
+        document.body.appendChild(textArea);
+        textArea.focus();
+        textArea.select();
+        document.execCommand('copy');
+        textArea.remove();
+        showToast(t('app.copySuccess', { defaultValue: '链接已复制，快去分享吧！' }), 'default');
+      }
+    } catch (err) {
+      console.error('Failed to copy: ', err);
+      showToast(t('app.copyFailed', { defaultValue: '复制失败，请手动复制链接' }), 'error');
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-slate-950 text-slate-200 font-sans selection:bg-indigo-500/30 relative">
+      {/* Toast Notification */}
+      {toast.msg && (
+        <div className={cn(
+          "fixed top-20 left-1/2 -translate-x-1/2 z-50 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4",
+          toast.type === 'wechat' ? "bg-[#07C160] shadow-[#07C160]/20" : 
+          toast.type === 'error' ? "bg-rose-600 shadow-rose-500/20" : 
+          "bg-indigo-600 shadow-indigo-500/20"
+        )}>
+          <span className="text-sm font-medium">{toast.msg}</span>
+        </div>
+      )}
+
       {/* Header & Search */}
       <header className="border-b border-slate-800 bg-slate-900/50 backdrop-blur-md sticky top-0 z-10">
         <div className="max-w-[100rem] mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
@@ -122,11 +193,11 @@ export default function App() {
             </div>
             <button
               type="button"
-              onClick={toggleLanguage}
+              onClick={handleShare}
               className="p-2 bg-slate-800/50 hover:bg-slate-700 border border-slate-700 rounded-full text-slate-300 transition-colors shrink-0 flex items-center justify-center"
-              title="Toggle Language"
+              title={t('app.shareBtn', { defaultValue: 'Share' })}
             >
-              <Languages className="w-5 h-5" />
+              <Share2 className="w-5 h-5" />
             </button>
           </form>
         </div>

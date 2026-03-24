@@ -19,7 +19,12 @@ export default {
     "weaponUsage": "Weapon Usage & Win Rate",
     "wins": "Win",
     "losses": "Lose",
-    "loadMore": "Load More"
+    "loadMore": "Load More",
+    "shareBtn": "Share",
+    "shareText": "Check out my Albion Avalon Battle Report!",
+    "wechatShareHint": "Tap ··· on top right to share with friends",
+    "copySuccess": "Link copied to clipboard!",
+    "copyFailed": "Failed to copy link. Please copy manually."
   },
   "battle": {
     "victory": "Victory",
