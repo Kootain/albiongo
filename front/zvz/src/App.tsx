@@ -6,9 +6,10 @@ import { useWebSocket } from "./hooks/useWebSocket";
 import { usePlayerStore } from "./store/usePlayerStore";
 import { useMonitorStore } from "./store/useMonitorStore";
 import { loadGameData } from "./utils/dataManager";
-import { Monitor, Users, Globe, Plus, Filter, History } from "lucide-react";
+import { Monitor, Users, Globe, Plus, Filter, History, Wifi, WifiOff, RefreshCw } from "lucide-react";
 import { FilterConfigPage } from "./components/FilterConfig/FilterConfigPage";
 import { BattleReplayPage } from "./components/BattleReplay/BattleReplayPage";
+import { useConnectionStore } from "./store/useConnectionStore";
 import "./i18n";
 
 export default function App() {
@@ -25,6 +26,7 @@ export default function App() {
 
 
   const { rows, cols, setGrid } = useMonitorStore();
+  const connectionStatus = useConnectionStore((s) => s.status);
   const [inputRows, setInputRows] = useState(rows);
   const [inputCols, setInputCols] = useState(cols);
 
@@ -156,6 +158,24 @@ export default function App() {
             <Globe size={14} />
             {i18n.language === "zh" ? "EN" : "中文"}
           </button>
+          {connectionStatus === 'connected' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-green-500/10 border border-green-500/20 text-green-400 text-xs font-medium">
+              <Wifi size={13} />
+              <span>已连接</span>
+            </div>
+          )}
+          {connectionStatus === 'reconnecting' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-400 text-xs font-medium">
+              <RefreshCw size={13} className="animate-spin" />
+              <span>重连中</span>
+            </div>
+          )}
+          {connectionStatus === 'disconnected' && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-800 border border-zinc-700 text-zinc-500 text-xs font-medium">
+              <WifiOff size={13} />
+              <span>未连接</span>
+            </div>
+          )}
         </div>
       </header>
 

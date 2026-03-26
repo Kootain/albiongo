@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { usePlayerStore } from "../store/usePlayerStore";
 import { useMonitorStore } from "../store/useMonitorStore";
 import { useEventStore } from "../store/useEventStore";
+import { useConnectionStore } from "../store/useConnectionStore";
 import {
   eventRegistry,
   NewCharacterEvent,
@@ -17,10 +18,13 @@ const host = "127.0.0.1:8081";
 
 export const useWebSocket = () => {
   const wsRef = useRef<WebSocket | null>(null);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const setPlayers = usePlayerStore((state) => state.setPlayers);
   const addOrUpdatePlayer = usePlayerStore((state) => state.addOrUpdatePlayer);
   const blocks = useMonitorStore((state) => state.blocks);
   const triggerBlock = useEventStore((state) => state.triggerBlock);
+  const { setConnected, setReconnecting, setDisconnected } = useConnectionStore.getState();
 
   const blocksRef = useRef(blocks);
   useEffect(() => {
@@ -128,6 +132,8 @@ export const useWebSocket = () => {
 
       ws.onopen = () => {
         console.log("WebSocket connected");
+        retryCountRef.current = 0;
+        setConnected();
       };
 
       ws.onmessage = (event) => {
@@ -150,9 +156,13 @@ export const useWebSocket = () => {
       ws.onclose = (event) => {
         if (isClosed) return;
         isClosed = true;
-        console.log(`WebSocket disconnected. Code: ${event.code}, Reason: ${event.reason}, WasClean: ${event.wasClean}`);
-        console.log("Reconnecting...");
-        setTimeout(connect, 3000);
+        const retryCount = retryCountRef.current;
+        // 起始 100ms，指数退避，上限 10s
+        const delayMs = Math.min(100 * Math.pow(2, retryCount), 10000);
+        retryCountRef.current = retryCount + 1;
+        console.log(`WebSocket disconnected. Code: ${event.code}. Retry #${retryCount + 1} in ${delayMs}ms`);
+        setReconnecting(retryCount + 1, delayMs);
+        retryTimerRef.current = setTimeout(connect, delayMs);
       };
 
       wsRef.current = ws;
@@ -167,7 +177,9 @@ export const useWebSocket = () => {
     const cleanup = connect();
 
     return () => {
+      if (retryTimerRef.current) clearTimeout(retryTimerRef.current);
       if (cleanup) cleanup();
+      setDisconnected();
       eventRegistry.unregister(29, handleNewCharacter);
       eventRegistry.unregister(90, handleEquipmentChanged);
       eventRegistry.unregister(19, handleSkillUse);
