@@ -4,8 +4,9 @@ import "albiongo/pkg/protocol"
 
 type EventCastStart struct {
 	*EventBase
-	ObjectID int `mapstructure:"0"`
-	SpellID  int `mapstructure:"5"`
+	ObjectID int    `mapstructure:"0"`
+	SpellID  int    `mapstructure:"5"`
+	Name     string `player_name:"ObjectID"`
 }
 
 func init() {

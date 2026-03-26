@@ -122,35 +122,48 @@ func (pm *PlayerManager) ListPlayer(filter *game.PlayerFilter) ([]*game.Player, 
 	return players, nil
 }
 
-func (g *GameStats) PlayerNameComplete(e protocol.Command) {
-	event, ok := e.(game.IPlayerNameAware)
-	if !ok {
-		return
-	}
-	name := g.Players.getUserNameByID(event.PlayerID())
-	if name == "" {
-		return
-	}
+type nameMapping struct {
+	idFieldIdx   int
+	nameFieldIdx int
+}
 
-	v := reflect.ValueOf(event)
-	// If it's a pointer, get the underlying element
+var typeCache sync.Map
+
+func getNameMappings(t reflect.Type) []nameMapping {
+	if v, ok := typeCache.Load(t); ok {
+		return v.([]nameMapping)
+	}
+	var mappings []nameMapping
+	for i := 0; i < t.NumField(); i++ {
+		tag := t.Field(i).Tag.Get("player_name")
+		if tag == "" {
+			continue
+		}
+		idField, ok := t.FieldByName(tag)
+		if !ok {
+			continue
+		}
+		mappings = append(mappings, nameMapping{
+			idFieldIdx:   idField.Index[0],
+			nameFieldIdx: i,
+		})
+	}
+	typeCache.Store(t, mappings)
+	return mappings
+}
+
+func (g *GameStats) PlayerNameComplete(e protocol.Command) {
+	v := reflect.ValueOf(e)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
 	}
-
 	if v.Kind() != reflect.Struct {
 		return
 	}
-
-	// Find the first field of type game.PlayerName and set it
-	var pName game.IPlayerName
-	for i := 0; i < v.NumField(); i++ {
-		field := v.Field(i)
-		if field.Type() == reflect.TypeOf(pName) {
-			if field.CanSet() {
-				field.SetString(name)
-			}
-			break
+	for _, m := range getNameMappings(v.Type()) {
+		id := int(v.Field(m.idFieldIdx).Int())
+		if name := g.Players.getUserNameByID(id); name != "" {
+			v.Field(m.nameFieldIdx).SetString(name)
 		}
 	}
 }
@@ -168,9 +181,9 @@ func (g *GameStats) GameStatsConsumer(ctx context.Context, event protocol.Comman
 	// case *types.EventRegenerationPlayerComboChanged:
 	// g.Players.changeHostIdx(event.ObjectID)
 	case *types.EventCharacterEquipmentChanged:
-		if err := g.Players.updatePlayerEquiments(int(event.PlayerID()), event.EquipmentIDs, event.SpellIDs); err != nil {
+		if err := g.Players.updatePlayerEquiments(event.ObjectID, event.EquipmentIDs, event.SpellIDs); err != nil {
 			g.mu.Lock()
-			g.tmp[int(event.PlayerID())] = &game.Player{
+			g.tmp[event.ObjectID] = &game.Player{
 				Equipments: event.EquipmentIDs,
 				Spells:     event.SpellIDs,
 			}

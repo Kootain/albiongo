@@ -14,8 +14,9 @@ type EventActiveSpellEffectsUpdate struct {
 	Unknown6   []int `mapstructure:"7"`
 	DurationMs []int `mapstructure:"8"`
 
-	Unknown9  []int `mapstructure:"9"`
-	CauserIDs []int `mapstructure:"10"` // [0,0,464,464]
+	Unknown9  []int  `mapstructure:"9"`
+	CauserIDs []int  `mapstructure:"10"` // [0,0,464,464]
+	Name      string `player_name:"ObjectID"`
 }
 
 func init() {

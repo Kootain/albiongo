@@ -64,6 +64,13 @@ func (l *listener) startOnline(device string, port int) {
 	l.run()
 }
 
+func registerPhotonPorts(ports []int) {
+	for _, port := range ports {
+		layers.RegisterUDPPortLayerType(layers.UDPPort(port), photon.PhotonLayerType)
+		layers.RegisterTCPPortLayerType(layers.TCPPort(port), photon.PhotonLayerType)
+	}
+}
+
 func (l *listener) startOfflinePcap(path string) {
 	handle, err := pcap.OpenOffline(path)
 	if err != nil {
@@ -71,10 +78,7 @@ func (l *listener) startOfflinePcap(path string) {
 	}
 	l.handle = handle
 
-	for _, port := range ports {
-		layers.RegisterUDPPortLayerType(layers.UDPPort(port), photon.PhotonLayerType)
-		layers.RegisterTCPPortLayerType(layers.TCPPort(port), photon.PhotonLayerType)
-	}
+	registerPhotonPorts(ports)
 	source := gopacket.NewPacketSource(handle, handle.LinkType())
 	l.sourcePackets = source.Packets()
 
@@ -118,10 +122,7 @@ func (l *listener) startOfflineCommandGob(path string) {
 		log.Info("All offline commands should processed now.")
 	}()
 
-	for _, port := range ports {
-		layers.RegisterUDPPortLayerType(layers.UDPPort(port), photon.PhotonLayerType)
-		layers.RegisterTCPPortLayerType(layers.TCPPort(port), photon.PhotonLayerType)
-	}
+	registerPhotonPorts(ports)
 
 	l.displayName = fmt.Sprintf("Offline Commands: %s", path)
 	l.run()

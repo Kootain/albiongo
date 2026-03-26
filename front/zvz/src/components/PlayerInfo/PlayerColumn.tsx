@@ -152,7 +152,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
       const updateTimeB = b.UpdateTime || 0;
       return updateTimeB - updateTimeA; 
     });
-    }, [players, filterGuild, filterAlliance, searchName, searchItem, minPLevel, sortByPLevel, sortByWeaponType]);
+    }, [players, filterGuild, filterAlliance, searchName, filterTime, searchItem, minPLevel, sortByPLevel, sortByWeaponType]);
   
     const groupedPlayers = useMemo(() => {
       if (!sortByWeaponType) {

@@ -49,24 +49,3 @@ func (t Timestamp) String() string {
 	return fmt.Sprintf("%02d:%02d:%02d.%03d", hours, minutes, seconds, millis)
 }
 
-type IPlayerObjectID int
-
-func (o IPlayerObjectID) PlayerID() int {
-	return int(o)
-}
-
-type IPlayerName string
-
-func (n IPlayerName) PlayerName() string {
-	return string(n)
-}
-
-type IPlayerNameAware interface {
-	PlayerName() string
-	PlayerID() int
-}
-
-type ICaster interface {
-	GetCasterID() IPlayerObjectID
-	SetCasterName(string)
-}
