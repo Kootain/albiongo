@@ -7,6 +7,7 @@ interface BattleState {
   isLoading: boolean;
   loadProgress: number;   // 0–100
   loadError: string | null;
+  isLive: boolean;        // 当前数据来自实时 WS
 
   filters: EventFilters;
   filteredEvents: BattleEvent[];   // 预计算好的过滤结果
@@ -14,6 +15,8 @@ interface BattleState {
 
   // 操作
   loadFile: (file: File) => void;
+  initLiveSession: () => void;
+  appendLiveEvent: (event: BattleEvent) => void;
   setEventTypeFilter: (type: EventType, enabled: boolean) => void;
   setGuildFilter: (guild: string, enabled: boolean) => void;
   setPlayerNameFilter: (name: string) => void;
@@ -21,18 +24,18 @@ interface BattleState {
   toggleShowAllEvents: () => void;
 }
 
+function eventMatchesFilters(ev: BattleEvent, filters: EventFilters): boolean {
+  if (!filters.eventTypes.has(ev.type)) return false;
+  if (filters.guilds.size > 0 && ev.actorGuild && !filters.guilds.has(ev.actorGuild)) return false;
+  if (filters.playerName) {
+    const q = filters.playerName.toLowerCase();
+    if (!ev.actorName?.toLowerCase().includes(q) && !ev.targetName?.toLowerCase().includes(q)) return false;
+  }
+  return true;
+}
+
 function applyFilters(events: BattleEvent[], filters: EventFilters): BattleEvent[] {
-  return events.filter(ev => {
-    if (!filters.eventTypes.has(ev.type)) return false;
-    if (filters.guilds.size > 0 && ev.actorGuild && !filters.guilds.has(ev.actorGuild)) return false;
-    if (filters.playerName) {
-      const q = filters.playerName.toLowerCase();
-      const matchActor = ev.actorName?.toLowerCase().includes(q);
-      const matchTarget = ev.targetName?.toLowerCase().includes(q);
-      if (!matchActor && !matchTarget) return false;
-    }
-    return true;
-  });
+  return events.filter(ev => eventMatchesFilters(ev, filters));
 }
 
 const DEFAULT_EVENT_TYPES: Set<EventType> = new Set([
@@ -54,12 +57,50 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   isLoading: false,
   loadProgress: 0,
   loadError: null,
+  isLive: false,
   filters: { ...DEFAULT_FILTERS, eventTypes: new Set(DEFAULT_EVENT_TYPES) },
   filteredEvents: [],
   showAllEvents: false,
 
+  initLiveSession: () => {
+    const emptySession: BattleSession = {
+      startTs: 0, endTs: 0, durationMs: 0,
+      totalEvents: 0, events: [],
+      players: {}, playersByName: {},
+      guilds: [], alliances: [],
+      eventTypeCounts: {} as BattleSession['eventTypeCounts'],
+    };
+    set({ isLive: true, session: emptySession, filteredEvents: [], isLoading: false, loadError: null });
+  },
+
+  appendLiveEvent: (event) => {
+    const { session, filters, showAllEvents } = get();
+    if (!session) return;
+
+    const isFirst    = session.totalEvents === 0;
+    const newStartTs = isFirst ? event.ts : session.startTs;
+    const newEndTs   = Math.max(session.endTs, event.ts);
+    const newEvents  = [...session.events, event];
+    const newCounts  = { ...session.eventTypeCounts, [event.type]: (session.eventTypeCounts[event.type] ?? 0) + 1 };
+
+    const newSession: BattleSession = {
+      startTs: newStartTs, endTs: newEndTs,
+      durationMs: newEndTs - newStartTs,
+      totalEvents: newEvents.length,
+      events: newEvents,
+      players: session.players, playersByName: session.playersByName,
+      guilds: session.guilds,   alliances: session.alliances,
+      eventTypeCounts: newCounts,
+    };
+
+    const passes     = showAllEvents || eventMatchesFilters(event, filters);
+    const newFiltered = passes ? [...get().filteredEvents, event] : get().filteredEvents;
+
+    set({ session: newSession, filteredEvents: newFiltered });
+  },
+
   loadFile: (file: File) => {
-    set({ isLoading: true, loadProgress: 0, loadError: null, session: null, filteredEvents: [] });
+    set({ isLoading: true, loadProgress: 0, loadError: null, session: null, filteredEvents: [], isLive: false });
 
     const worker = new BattleParserWorker();
 

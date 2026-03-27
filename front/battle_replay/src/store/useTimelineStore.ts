@@ -12,6 +12,7 @@ interface TimelineState {
   // 操作
   setViewport: (vp: Partial<TimelineViewport>) => void;
   initViewport: (sessionStartTs: number, sessionEndTs: number, viewStartTs?: number, viewEndTs?: number) => void;
+  setSessionBounds: (startTs: number, endTs: number) => void;
   zoom: (factor: number, anchorTs: number) => void;
   pan: (deltaTs: number) => void;
   scrollBy: (deltaY: number) => void;
@@ -54,6 +55,12 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
       sessionEndTs,
       sessionDurationMs: sessionEndTs - sessionStartTs,
     }),
+
+  setSessionBounds: (startTs, endTs) => set({
+    sessionStartTs: startTs,
+    sessionEndTs: endTs,
+    sessionDurationMs: endTs - startTs,
+  }),
 
   zoom: (factor, anchorTs) => {
     const { viewport, sessionStartTs, sessionEndTs, sessionDurationMs } = get();

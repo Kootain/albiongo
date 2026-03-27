@@ -107,98 +107,109 @@ function buildEvent(entry: RawLogEntry, players: Record<number, PlayerProfile>):
       const p = profile(entry.ObjectID);
       return {
         ...base,
-        actorId: entry.ObjectID,
-        actorName: p?.name,
-        actorGuild: p?.guildName,
-        spellId: entry.SpellIndex,
+        actorId:   entry.ObjectID,
+        actorName: entry.Name ?? p?.name,
+        actorGuild:p?.guildName,
+        // SpellID (新格式 Data[5]) 是直接 DB ID；SpellIndex 同Key 保留兼容
+        spellId: entry.SpellID ?? dNum(entry, 5) ?? entry.SpellIndex,
       };
     }
     case 'cast_hit': {
-      const p1 = profile(entry.ObjectID1);
-      const p2 = profile(entry.ObjectID2);
+      // JSONL 格式: ObjectID1=施法者, ObjectID2=命中者, SpellIndex=直接DB ID
+      // WS 格式: CasterObjectID, HitObjectID, CasterName, HitName
+      const casterId = entry.CasterObjectID ?? entry.ObjectID1;
+      const hitId    = entry.HitObjectID    ?? entry.ObjectID2;
       return {
         ...base,
-        actorId: entry.ObjectID1,
-        actorName: p1?.name,
-        actorGuild: p1?.guildName,
-        targetId: entry.ObjectID2,
-        targetName: p2?.name,
-        spellId: entry.SpellIndex,
+        actorId:    casterId,
+        actorName:  entry.CasterName ?? profile(casterId)?.name,
+        actorGuild: profile(casterId)?.guildName,
+        targetId:   hitId,
+        targetName: entry.HitName ?? profile(hitId)?.name,
+        targetGuild:profile(hitId)?.guildName,
+        spellId:    entry.SpellIndex ?? dNum(entry, 2),
       };
     }
 
     // ── Data 数字键格式（日志捕获时尚未实现的事件） ────────────────────────────────
     case 'kill': {
-      // Data[1]=victimObjectID, [2]=victimName, [3]=victimGuild
-      // Data[9]=killerObjectID, [10]=killerName, [11]=killerGuild
-      const victimId  = dNum(entry, 1);
-      const killerId  = dNum(entry, 9);
+      // 新格式: VictimID/VictimName/VictimGuild/KillerID/KillerName/KillerGuild
+      // 旧格式: Data[1]=victimObjectID, [2]=victimName, [3]=victimGuild, [9]=killerID, [10]=killerName, [11]=killerGuild
+      const victimId = entry.VictimID  ?? dNum(entry, 1);
+      const killerId = entry.KillerID  ?? dNum(entry, 9);
       const vp = profile(victimId);
       const kp = profile(killerId);
       return {
         ...base,
-        actorId:    killerId,
-        actorName:  dStr(entry, 10) ?? kp?.name,
-        actorGuild: dStr(entry, 11) ?? kp?.guildName,
-        targetId:   victimId,
-        targetName: dStr(entry, 2)  ?? vp?.name,
-        targetGuild:dStr(entry, 3)  ?? vp?.guildName,
+        actorId:     killerId,
+        actorName:   entry.KillerName  ?? dStr(entry, 10) ?? kp?.name,
+        actorGuild:  entry.KillerGuild ?? dStr(entry, 11) ?? kp?.guildName,
+        targetId:    victimId,
+        targetName:  entry.VictimName  ?? dStr(entry, 2)  ?? vp?.name,
+        targetGuild: entry.VictimGuild ?? dStr(entry, 3)  ?? vp?.guildName,
       };
     }
     case 'attack': {
-      // Data[0]=attacker, [2]=target, [6]=result(0=hit,1=miss)
-      const attackerId = dNum(entry, 0);
-      const targetId   = dNum(entry, 2);
+      // 新格式: AttackerObjectID(Data[0]), TargetObjectID(Data[2]), Result(Data[6]), AttackerName, TargetName
+      // 旧格式: Data[0]=attacker, [2]=target, [6]=result
+      const attackerId = entry.AttackerObjectID ?? dNum(entry, 0);
+      const targetId   = entry.TargetObjectID   ?? dNum(entry, 2);
       return {
         ...base,
         actorId:    attackerId,
-        actorName:  profile(attackerId)?.name,
+        actorName:  entry.AttackerName ?? profile(attackerId)?.name,
         actorGuild: profile(attackerId)?.guildName,
         targetId,
-        targetName: profile(targetId)?.name,
+        targetName: entry.TargetName ?? profile(targetId)?.name,
+        targetGuild:profile(targetId)?.guildName,
+        // Result: 0=命中 1=格挡/闪避，存入 raw.Result，由 Drawer 读取
       };
     }
     case 'cast_finished': {
-      // Data[0]=casterObjectID, [2]=spellID
-      const casterId = dNum(entry, 0);
+      // 新格式: CasterObjectID(Data[0]), SpellID(Data[2]), CasterName
+      // 旧格式: Data[0]=casterObjectID, [2]=spellID
+      const casterId = entry.CasterObjectID ?? dNum(entry, 0);
       return {
         ...base,
-        actorId:   casterId,
-        actorName: profile(casterId)?.name,
-        actorGuild:profile(casterId)?.guildName,
-        spellId:   dNum(entry, 2),
+        actorId:    casterId,
+        actorName:  entry.CasterName ?? profile(casterId)?.name,
+        actorGuild: profile(casterId)?.guildName,
+        spellId:    entry.SpellID ?? dNum(entry, 2),
       };
     }
     case 'cast_hits': {
-      // Data[0]=casterObjectID, [1]=[targetObjectIDs], [2]=[spellIndices]
-      const casterId   = dNum(entry, 0);
-      const targetIds  = dNumArr(entry, 1);
+      // 新格式: CasterObjectID(Data[0]), TargetObjectIDs(Data[1]), SpellIndices(Data[2]), CasterName
+      // 旧格式: Data[0]=casterObjectID, [1]=[targetObjectIDs], [2]=[spellIndices]
+      const casterId  = entry.CasterObjectID ?? dNum(entry, 0);
+      const targetIds = entry.TargetObjectIDs ?? dNumArr(entry, 1);
       const firstTarget = targetIds?.[0];
       return {
         ...base,
-        actorId:   casterId,
-        actorName: profile(casterId)?.name,
-        actorGuild:profile(casterId)?.guildName,
-        targetId:  firstTarget,
-        targetName:profile(firstTarget)?.name,
-        spellId:   dNumArr(entry, 2)?.[0],
+        actorId:    casterId,
+        actorName:  entry.CasterName ?? profile(casterId)?.name,
+        actorGuild: profile(casterId)?.guildName,
+        targetId:   firstTarget,
+        targetName: profile(firstTarget)?.name,
+        spellId:    (entry.SpellIndices ?? dNumArr(entry, 2))?.[0],
       };
     }
     case 'health_update': {
-      // Data[0]=objectID, [2]=healthDelta, [3]=healthAfter, [6]=causerID, [7]=spellID
-      const objectId = dNum(entry, 0);
-      const causerID = dNum(entry, 6);
-      const delta    = dNum(entry, 2);
+      // 新格式: ObjectID, HealthDelta, Health, CauserID, SpellID, Name, CauserName
+      // 旧格式: Data[0]=objectID, [2]=healthDelta, [3]=healthAfter, [6]=causerID, [7]=spellID
+      const objectId = entry.ObjectID ?? dNum(entry, 0);
+      const causerID = entry.CauserID ?? dNum(entry, 6);
+      const delta    = entry.HealthDelta ?? dNum(entry, 2);
       return {
         ...base,
         actorId:       objectId,
-        actorName:     profile(objectId)?.name,
+        actorName:     entry.Name     ?? profile(objectId)?.name,
         actorGuild:    profile(objectId)?.guildName,
         targetId:      causerID,
-        targetName:    profile(causerID)?.name,
-        spellId:       dNum(entry, 7),
+        targetName:    entry.CauserName ?? profile(causerID)?.name,
+        targetGuild:   profile(causerID)?.guildName,
+        spellId:       entry.SpellID ?? dNum(entry, 7),
         damage:        delta,
-        currentHealth: dNum(entry, 3),
+        currentHealth: entry.Health ?? dNum(entry, 3),
       };
     }
     case 'health_updates': {
@@ -216,62 +227,65 @@ function buildEvent(entry: RawLogEntry, players: Record<number, PlayerProfile>):
     }
     case 'energy_update': {
       // Data[0]=objectID, [2]=energyDelta, [3]=energyAfter
-      const objectId = dNum(entry, 0);
+      const objectId = entry.ObjectID ?? dNum(entry, 0);
       return {
         ...base,
-        actorId:    objectId,
-        actorName:  profile(objectId)?.name,
-        actorGuild: profile(objectId)?.guildName,
-        damage:     dNum(entry, 2),   // reuse damage field for delta
+        actorId:       objectId,
+        actorName:     entry.Name ?? profile(objectId)?.name,
+        actorGuild:    profile(objectId)?.guildName,
+        damage:        dNum(entry, 2),
         currentHealth: dNum(entry, 3),
       };
     }
     case 'forced_movement': {
-      // Data[0]=targetObjectID, [7]=spellID, [9]=sourceObjectID
-      const targetId = dNum(entry, 0);
-      const sourceId = dNum(entry, 9);
+      // 新格式: TargetObjectID(Data[0]), SpellID(Data[7]), SourceObjectID(Data[9]), TargetName, SourceName
+      // 旧格式: Data[0]=targetObjectID, [7]=spellID, [9]=sourceObjectID
+      const targetId = entry.TargetObjectID ?? dNum(entry, 0);
+      const sourceId = entry.SourceObjectID ?? dNum(entry, 9);
       return {
         ...base,
         actorId:    sourceId,
-        actorName:  profile(sourceId)?.name,
+        actorName:  entry.SourceName ?? profile(sourceId)?.name,
         actorGuild: profile(sourceId)?.guildName,
         targetId,
-        targetName: profile(targetId)?.name,
+        targetName: entry.TargetName ?? profile(targetId)?.name,
         targetGuild:profile(targetId)?.guildName,
-        spellId:    dNum(entry, 7),
+        spellId:    entry.SpellID ?? dNum(entry, 7),
       };
     }
     case 'spell_effect_area': {
-      // Data[4]=spellID, [6]=casterObjectID
-      const casterId = dNum(entry, 6);
+      // 新格式: SpellID(Data[4]), CasterObjectID(Data[6]), CasterName
+      // 旧格式: Data[4]=spellID, [6]=casterObjectID
+      const casterId = entry.CasterObjectID ?? dNum(entry, 6);
       return {
         ...base,
-        actorId:   casterId,
-        actorName: profile(casterId)?.name,
-        actorGuild:profile(casterId)?.guildName,
-        spellId:   dNum(entry, 4),
+        actorId:    casterId,
+        actorName:  entry.CasterName ?? profile(casterId)?.name,
+        actorGuild: profile(casterId)?.guildName,
+        spellId:    entry.SpellID ?? dNum(entry, 4),
       };
     }
     case 'mounted': {
-      // Data[0]=objectID, [2]=mountItemID, [5]=moveSpeed
-      const objectId = dNum(entry, 0);
+      // 新格式: ObjectID(Data[0]), MountItemID(Data[2]), Name
+      // 旧格式: Data[0]=objectID, [2]=mountItemID
+      const objectId = entry.ObjectID ?? dNum(entry, 0);
       return {
         ...base,
         actorId:     objectId,
-        actorName:   profile(objectId)?.name,
+        actorName:   entry.Name ?? profile(objectId)?.name,
         actorGuild:  profile(objectId)?.guildName,
-        mountItemId: dNum(entry, 2),
+        mountItemId: entry.MountItemID ?? dNum(entry, 2),
       };
     }
     case 'mount_start': {
-      // Data[0]=objectID, [2]=mountItemID
-      const objectId = dNum(entry, 0);
+      // 新格式: ObjectID(Data[0]), MountItemID(Data[2]), Name
+      const objectId = entry.ObjectID ?? dNum(entry, 0);
       return {
         ...base,
         actorId:     objectId,
-        actorName:   profile(objectId)?.name,
+        actorName:   entry.Name ?? profile(objectId)?.name,
         actorGuild:  profile(objectId)?.guildName,
-        mountItemId: dNum(entry, 2),
+        mountItemId: entry.MountItemID ?? dNum(entry, 2),
       };
     }
     default:
@@ -288,25 +302,15 @@ self.onmessage = (e: MessageEvent<string>) => {
 
   const players: Record<number, PlayerProfile> = {};
   const playersByName: Record<string, PlayerProfile> = {};
-  const events: BattleEvent[] = [];
   const guilds = new Set<string>();
   const alliances = new Set<string>();
 
-  const PROGRESS_INTERVAL = 5000;
-
+  // ── 第一遍：建立完整的玩家档案（new_character / equipment_change） ──────────
+  // 这样第二遍解析事件时，所有玩家名字都已可查
   for (let i = 0; i < lines.length; i++) {
-    if (i % PROGRESS_INTERVAL === 0 && i > 0) {
-      self.postMessage({ type: 'progress', parsed: i, total } satisfies WorkerMessage);
-    }
-
     let entry: RawLogEntry;
-    try {
-      entry = JSON.parse(lines[i]);
-    } catch {
-      continue;
-    }
+    try { entry = JSON.parse(lines[i]); } catch { continue; }
 
-    // 用 EventNewCharacter 建立玩家档案
     if (entry.Type === 0 && entry.Code === CODE_NEW_CHARACTER && entry.ObjectID !== undefined) {
       const existing = players[entry.ObjectID];
       const profile: PlayerProfile = {
@@ -318,13 +322,26 @@ self.onmessage = (e: MessageEvent<string>) => {
         spellIds:     entry.SpellIDs ?? existing?.spellIds ?? [],
         firstSeenTs:  existing?.firstSeenTs ?? entry.Ts,
         lastSeenTs:   entry.Ts,
-        eventCount:   (existing?.eventCount ?? 0) + 1,
+        eventCount:   0,
       };
       players[entry.ObjectID] = profile;
       if (profile.name) playersByName[profile.name] = profile;
       if (profile.guildName) guilds.add(profile.guildName);
       if (profile.allianceName) alliances.add(profile.allianceName);
     }
+  }
+
+  // ── 第二遍：解析所有事件 ──────────────────────────────────────────────────────
+  const events: BattleEvent[] = [];
+  const PROGRESS_INTERVAL = 5000;
+
+  for (let i = 0; i < lines.length; i++) {
+    if (i % PROGRESS_INTERVAL === 0 && i > 0) {
+      self.postMessage({ type: 'progress', parsed: i, total } satisfies WorkerMessage);
+    }
+
+    let entry: RawLogEntry;
+    try { entry = JSON.parse(lines[i]); } catch { continue; }
 
     // 更新 lastSeenTs 和 eventCount
     const actorId = entry.ObjectID ?? entry.CasterObjectID ?? entry.ObjectID1 ?? dNum(entry, 0);

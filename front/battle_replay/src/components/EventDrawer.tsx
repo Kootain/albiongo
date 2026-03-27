@@ -3,20 +3,56 @@ import { X } from 'lucide-react';
 import React from 'react';
 import { useBattleStore } from '../store/useBattleStore';
 import { useTimelineStore } from '../store/useTimelineStore';
-import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, type BattleEvent, type BattleSession } from '../types';
+import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, type BattleEvent, type EventType } from '../types';
+
+// ── 工具函数 ──────────────────────────────────────────────────────────────────
 
 function formatTs(ts: number, startTs: number): string {
-  const elapsed = ts - startTs;
+  const elapsed  = ts - startTs;
   const totalSec = Math.floor(elapsed / 1000);
   const ms = elapsed % 1000;
-  const m = Math.floor(totalSec / 60);
-  const s = totalSec % 60;
+  const m  = Math.floor(totalSec / 60);
+  const s  = totalSec % 60;
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}.${String(ms).padStart(3, '0')}`;
 }
 
 function formatAbsoluteTs(ts: number): string {
   return new Date(ts).toLocaleTimeString('zh-CN', { hour12: false });
 }
+
+// SpellIndex / SpellID 均为直接 DB ID，直接查 SDK
+function resolveSpell(spellId: number | undefined): string | undefined {
+  if (spellId === undefined || spellId < 0) return undefined;
+  const name = getSpellName(spellId);
+  return name || undefined;
+}
+
+// ── 语义化标签 ────────────────────────────────────────────────────────────────
+
+function actorLabel(type: EventType): string {
+  switch (type) {
+    case 'cast_spell': case 'cast_start': case 'cast_finished':
+    case 'cast_hit':   case 'cast_hits':  case 'spell_effect_area':
+      return '施法者';
+    case 'attack':          return '攻击者';
+    case 'health_update':   return '受击者';
+    case 'forced_movement': return '施法方';
+    case 'kill':            return '凶手';
+    default:                return '玩家';
+  }
+}
+
+function targetLabel(type: EventType): string {
+  switch (type) {
+    case 'cast_hit':        return '命中者';
+    case 'forced_movement': return '被位移';
+    case 'health_update':   return '来源';
+    case 'kill':            return '死者';
+    default:                return '目标';
+  }
+}
+
+// ── 子组件 ────────────────────────────────────────────────────────────────────
 
 const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value }) => (
   <div className="flex items-start gap-2 py-2 border-b border-zinc-800/60 last:border-0">
@@ -25,9 +61,7 @@ const Row: React.FC<{ label: string; value: React.ReactNode }> = ({ label, value
   </div>
 );
 
-const PlayerBadge: React.FC<{ name?: string; guild?: string; alliance?: string }> = ({
-  name, guild, alliance,
-}) => {
+const PlayerBadge: React.FC<{ name?: string; guild?: string; alliance?: string }> = ({ name, guild, alliance }) => {
   if (!name) return <span className="text-zinc-600">—</span>;
   return (
     <div className="space-y-0.5">
@@ -39,14 +73,32 @@ const PlayerBadge: React.FC<{ name?: string; guild?: string; alliance?: string }
 
 const RawDataView: React.FC<{ data: unknown }> = ({ data }) => {
   const [expanded, setExpanded] = React.useState(false);
+  const [copied,   setCopied]   = React.useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch { /* ignore */ }
+  };
+
   return (
     <div className="mt-2">
-      <button
-        onClick={() => setExpanded(v => !v)}
-        className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
-      >
-        {expanded ? '▾ 收起原始数据' : '▸ 展开原始数据'}
-      </button>
+      <div className="flex items-center gap-2">
+        <button
+          onClick={() => setExpanded(v => !v)}
+          className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors"
+        >
+          {expanded ? '▾ 收起原始数据' : '▸ 展开原始数据'}
+        </button>
+        <button
+          onClick={handleCopy}
+          className="text-xs text-zinc-600 hover:text-indigo-400 transition-colors ml-auto"
+        >
+          {copied ? '✓ 已复制' : '复制'}
+        </button>
+      </div>
       {expanded && (
         <pre className="mt-2 text-xs text-zinc-400 bg-zinc-950 rounded-lg p-3 overflow-x-auto border border-zinc-800">
           {JSON.stringify(data, null, 2)}
@@ -56,28 +108,24 @@ const RawDataView: React.FC<{ data: unknown }> = ({ data }) => {
   );
 };
 
-function resolveSpellLabel(event: BattleEvent, session: BattleSession | null): string | undefined {
-  if (event.spellId === undefined) return undefined;
+// ── 事件详情内容 ──────────────────────────────────────────────────────────────
 
-  // 通过玩家档案将插槽索引 → 真实 spell DB ID
-  if (event.actorId !== undefined && session) {
-    const profile = session.players[event.actorId];
-    if (profile?.spellIds?.length) {
-      const realId = profile.spellIds[event.spellId];
-      if (realId !== undefined) return getSpellName(realId, `#${realId}`);
-    }
-  }
-  // cast_finished / forced_movement / spell_effect_area 的 spellId 是直接 DB ID
-  const directName = getSpellName(event.spellId);
-  if (directName) return directName;
-  return `#${event.spellId}`;
-}
+const EventDetail: React.FC<{ event: BattleEvent; startTs: number }> = ({ event, startTs }) => {
+  const spellName = resolveSpell(event.spellId);
+  const aLabel    = actorLabel(event.type);
+  const tLabel    = targetLabel(event.type);
 
-const EventDetail: React.FC<{ event: BattleEvent; startTs: number; session: BattleSession | null }> = ({ event, startTs, session }) => {
-  const spellLabel = resolveSpellLabel(event, session);
+  const castHitsCount = event.type === 'cast_hits'
+    ? (event.raw.TargetObjectIDs?.length ?? null)
+    : null;
+
+  const attackResult = event.type === 'attack' && event.raw.Result !== undefined
+    ? (event.raw.Result === 0 ? '命中' : '格挡/闪避')
+    : null;
 
   return (
     <div className="space-y-0">
+      {/* 类型 */}
       <Row
         label="类型"
         value={
@@ -87,28 +135,44 @@ const EventDetail: React.FC<{ event: BattleEvent; startTs: number; session: Batt
           </span>
         }
       />
+
+      {/* 时间 */}
       <Row label="时间" value={`${formatTs(event.ts, startTs)} (${formatAbsoluteTs(event.ts)})`} />
 
-      {/* 击杀事件：凶手 → 受害者 */}
-      {event.type === 'kill' ? (
-        <>
-          <Row label="凶手" value={<PlayerBadge name={event.actorName} guild={event.actorGuild} />} />
-          <Row label="死者" value={<PlayerBadge name={event.targetName} guild={event.targetGuild} />} />
-        </>
-      ) : (
-        <>
-          {event.actorName && (
-            <Row label="来源" value={<PlayerBadge name={event.actorName} guild={event.actorGuild} alliance={event.actorAlliance} />} />
-          )}
-          {event.targetName && (
-            <Row label="目标" value={<PlayerBadge name={event.targetName} guild={event.targetGuild} />} />
-          )}
-        </>
+      {/* actor */}
+      {event.actorName && (
+        <Row
+          label={aLabel}
+          value={<PlayerBadge name={event.actorName} guild={event.actorGuild} alliance={event.actorAlliance} />}
+        />
       )}
 
-      {spellLabel !== undefined && <Row label="技能" value={spellLabel} />}
+      {/* target */}
+      {event.targetName && (
+        <Row
+          label={tLabel}
+          value={<PlayerBadge name={event.targetName} guild={event.targetGuild} />}
+        />
+      )}
 
-      {/* 伤害量 */}
+      {/* 技能 */}
+      {spellName && <Row label="技能" value={spellName} />}
+
+      {/* cast_hits：目标数 */}
+      {castHitsCount !== null && (
+        <Row label="命中数" value={<span className="text-indigo-400">{castHitsCount} 人</span>} />
+      )}
+
+      {/* attack：结果 */}
+      {attackResult !== null && (
+        <Row label="结果" value={
+          <span className={attackResult === '命中' ? 'text-green-400' : 'text-zinc-500'}>
+            {attackResult}
+          </span>
+        } />
+      )}
+
+      {/* 伤害/治疗 */}
       {event.damage !== undefined && event.type !== 'energy_update' && (
         <Row
           label="伤害"
@@ -118,6 +182,11 @@ const EventDetail: React.FC<{ event: BattleEvent; startTs: number; session: Batt
             </span>
           }
         />
+      )}
+
+      {/* health_update：当前血量 */}
+      {event.type === 'health_update' && event.currentHealth !== undefined && (
+        <Row label="当前血量" value={<span className="text-zinc-300">{event.currentHealth.toFixed(0)}</span>} />
       )}
 
       {/* 能量变化 */}
@@ -135,7 +204,7 @@ const EventDetail: React.FC<{ event: BattleEvent; startTs: number; session: Batt
         <Row label="坐骑" value={getItemName(event.mountItemId, `#${event.mountItemId}`)} />
       )}
 
-      {/* 装备列表 */}
+      {/* 装备 */}
       {event.equipmentIds && event.equipmentIds.length > 0 && (
         <Row
           label="装备"
@@ -158,10 +227,12 @@ const EventDetail: React.FC<{ event: BattleEvent; startTs: number; session: Batt
   );
 };
 
+// ── 抽屉容器 ──────────────────────────────────────────────────────────────────
+
 export const EventDrawer: React.FC = () => {
   const selectedEvent = useTimelineStore(s => s.selectedEvent);
-  const selectEvent = useTimelineStore(s => s.selectEvent);
-  const session = useBattleStore(s => s.session);
+  const selectEvent   = useTimelineStore(s => s.selectEvent);
+  const session       = useBattleStore(s => s.session);
 
   const isOpen = selectedEvent !== null;
 
@@ -185,11 +256,10 @@ export const EventDrawer: React.FC = () => {
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-3">
-            <EventDetail event={selectedEvent} startTs={session?.startTs ?? 0} session={session} />
+            <EventDetail event={selectedEvent} startTs={session?.startTs ?? 0} />
           </div>
         </>
       )}
     </div>
   );
 };
-

@@ -31,6 +31,42 @@ export interface RawLogEntry {
   // Code 11: EventActiveSpellEffectsUpdate
   CauserIDs?: number[];
 
+  // ── 新格式命名字段（Go struct json tag，随协议解析器更新陆续添加） ────────────────
+  // Code 21: EventCastHit
+  HitObjectID?: number;
+  HitName?: string;
+
+  // Code 22: EventCastHits
+  TargetObjectIDs?: number[];
+  SpellIndices?: number[];
+
+  // Code 13: EventAttack
+  AttackerObjectID?: number;
+  AttackerName?: string;
+  Result?: number;          // 0=命中, 1=格挡/闪避
+
+  // Code 141: EventForcedMovement
+  SourceObjectID?: number;
+  SourceName?: string;
+
+  // Code 209/210: EventMounted / EventMountStart
+  MountItemID?: number;
+
+  // ── WS 广播格式新增字段（Go struct json tag，JSONL 中不存在） ──────────────────
+  // Code 165: EventDied
+  VictimID?: number;
+  VictimName?: string;
+  VictimGuild?: string;
+  KillerID?: number;
+  KillerName?: string;
+  KillerGuild?: string;
+  // Code 6: EventHealthUpdate
+  HealthDelta?: number;
+  Health?: number;
+  CauserID?: number;
+  SpellID?: number;
+  CauserName?: string;
+
   // 其他未解析事件（Data 数字键格式，键为字符串化的 uint8）
   Data?: Record<string, unknown>;
 }

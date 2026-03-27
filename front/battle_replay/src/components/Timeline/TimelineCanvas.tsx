@@ -63,6 +63,7 @@ export const TimelineCanvas: React.FC = () => {
   const filteredEvents = useBattleStore(s => s.filteredEvents);
   const showAllEvents = useBattleStore(s => s.showAllEvents);
   const session = useBattleStore(s => s.session);
+  const isLive  = useBattleStore(s => s.isLive);
 
   const displayEvents = showAllEvents ? (session?.events ?? []) : filteredEvents;
 
@@ -308,6 +309,14 @@ export const TimelineCanvas: React.FC = () => {
     return (
       <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm select-none">
         请在顶部选择 JSONL 日志文件
+      </div>
+    );
+  }
+
+  if (isLive && session.totalEvents === 0) {
+    return (
+      <div className="flex-1 flex items-center justify-center text-zinc-600 text-sm select-none">
+        等待战斗事件…
       </div>
     );
   }

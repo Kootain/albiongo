@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useEffect } from 'react';
-import { Search, Loader2, Swords, Shield, Target, Users, TrendingUp, Share2 } from 'lucide-react';
+import { Search, Loader2, Swords, Target, Users, TrendingUp, Share2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { AvalonBattlePerformance } from './types';
 import { loadGameData } from './lib/dataManager';
@@ -26,13 +26,13 @@ export default function App() {
   // Initial load: parse URL for player name
   useEffect(() => {
     loadGameData();
-    
+
     const checkUrlAndSearch = () => {
       // e.g. /player/JohnDoe or just /?player=JohnDoe
       // Let's use search params: /?player=JohnDoe for simplicity and easier sharing
       const params = new URLSearchParams(window.location.search);
       const playerFromUrl = params.get('player');
-      
+
       if (playerFromUrl) {
         setSearchQuery(playerFromUrl);
         // We cannot rely on searchQuery state here since it's asynchronous
@@ -98,7 +98,7 @@ export default function App() {
     const currentUrl = window.location.href;
     const shareText = t('app.shareText', { defaultValue: '快来查看我的albion阿瓦隆战斗报告' });
     const shareTitle = t('app.title', { defaultValue: 'Albion Avalon Report' });
-    
+
     if (isWechat) {
       showToast(t('app.wechatShareHint', { defaultValue: '请点击右上角 ··· 发送给朋友' }), 'wechat');
       return;
@@ -115,7 +115,7 @@ export default function App() {
         // Note: We usually don't need a toast here because the OS shows its own share sheet
         return;
       } catch (err: any) {
-        // If the user cancelled the share, do not show error. 
+        // If the user cancelled the share, do not show error.
         // Only fallback to copy if it's an actual failure not caused by user abort.
         if (err.name !== 'AbortError') {
           console.error('Web Share API failed, falling back to clipboard', err);
@@ -156,8 +156,8 @@ export default function App() {
       {toast.msg && (
         <div className={cn(
           "fixed top-20 left-1/2 -translate-x-1/2 z-50 text-white px-6 py-3 rounded-full shadow-lg flex items-center gap-2 animate-in fade-in slide-in-from-top-4",
-          toast.type === 'wechat' ? "bg-[#07C160] shadow-[#07C160]/20" : 
-          toast.type === 'error' ? "bg-rose-600 shadow-rose-500/20" : 
+          toast.type === 'wechat' ? "bg-[#07C160] shadow-[#07C160]/20" :
+          toast.type === 'error' ? "bg-rose-600 shadow-rose-500/20" :
           "bg-indigo-600 shadow-indigo-500/20"
         )}>
           <span className="text-sm font-medium">{toast.msg}</span>
@@ -171,7 +171,7 @@ export default function App() {
             <Swords className="w-8 h-8 text-indigo-400" />
             <h1 className="text-xl font-bold tracking-tight text-white">{t('app.title')}</h1>
           </div>
-          
+
           <form onSubmit={handleSearch} className="w-full sm:w-auto relative flex items-center gap-4">
             <div className="relative flex items-center w-full sm:w-auto">
               <Search className="absolute left-3 w-5 h-5 text-slate-400" />
@@ -183,8 +183,8 @@ export default function App() {
                 className="w-full sm:w-80 bg-slate-800/50 border border-slate-700 rounded-full py-2 pl-10 pr-4 text-sm text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
                 disabled={loading}
               />
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 disabled={loading || !searchQuery.trim()}
                 className="absolute right-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full px-3 py-1 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
@@ -248,20 +248,20 @@ export default function App() {
 
             {/* Stats Grid */}
             <div className="grid grid-cols-3 gap-2 sm:gap-4">
-              <StatCard 
-                title={t('app.winRate')} 
+              <StatCard
+                title={t('app.winRate')}
                 value={`${((data.WinCnt / data.BattleCnt) * 100).toFixed(1)}%`}
                 subtext={`${data.WinCnt} ${t('app.wins')} - ${data.LoseCnt} ${t('app.losses')}`}
                 icon={<TrendingUp className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-400" />}
               />
-              <StatCard 
-                title={t('app.personalKD')} 
+              <StatCard
+                title={t('app.personalKD')}
                 value={calcKD(data.Kills, data.Deaths)}
                 subtext={`${data.Kills} ${t('app.kills')} / ${data.Deaths} ${t('app.deaths')}`}
                 icon={<Target className="w-4 h-4 sm:w-5 sm:h-5 text-indigo-400" />}
               />
-              <StatCard 
-                title={t('app.teamKD')} 
+              <StatCard
+                title={t('app.teamKD')}
                 value={calcKD(data.TeamKills, data.TeamDeaths)}
                 subtext={`${data.TeamKills} ${t('app.kills')} / ${data.TeamDeaths} ${t('app.deaths')}`}
                 icon={<Users className="w-4 h-4 sm:w-5 sm:h-5 text-blue-400" />}
@@ -269,7 +269,7 @@ export default function App() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              <div className="lg:col-span-1"> 
+              <div className="lg:col-span-1">
                 <h3 className="text-lg font-semibold text-white mb-4">{t('app.weaponUsage')}</h3>
                 <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 h-fit">
                   {data.RadarScores && data.RadarScores.length > 0 ? (
@@ -294,4 +294,3 @@ export default function App() {
     </div>
   );
 }
-
