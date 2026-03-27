@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useLiveStore, type WsEvent } from '../store/useLiveStore';
 
-const WS_URL = 'ws://127.0.0.1:8081/events';
+const WS_URL = 'ws://192.168.31.95:8081/events';
 
 export function useLiveWS() {
   const setStatus  = useLiveStore(s => s.setStatus);

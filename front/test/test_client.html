@@ -1588,7 +1588,7 @@
             updateStatus('connecting', 'Connecting...');
             
             try {
-                ws = new WebSocket('ws://localhost:8081/events');
+                ws = new WebSocket('ws://192.168.31.95:8081/events');
 
                 ws.onopen = function() {
                     updateStatus('connected', 'Connected');
