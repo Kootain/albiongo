@@ -1,12 +1,24 @@
 package types
 
-import "albiongo/pkg/protocol"
+import (
+	"albiongo/pkg/game"
+	"albiongo/pkg/protocol"
+)
 
 // EvNewSpellEffectArea (Code 113) — 技能效果区域生成（持续性 AoE）
 type EventNewSpellEffectArea struct {
 	*EventBase
-	SpellID        int `mapstructure:"4" json:"SpellID"`
-	CasterObjectID int `mapstructure:"6" json:"CasterObjectID"`
+	EventID        int           `mapstructure:"0"`
+	CasterObjectID int           `mapstructure:"1" json:"CasterObjectID"`
+	Pos            game.Position `mapstructure:"2"`
+	Dirction       float64       `mapstructure:"3"`
+	SpellID        int           `mapstructure:"4" json:"SpellID"`
+	UnknownInt     int           `mapstructure:"5"`
+	StartTimestamp int           `mapstructure:"6"`
+	EndTimestamp   int           `mapstructure:"7"`
+	UnknownInt8    int           `mapstructure:"8"`
+	UnknownInt9    int           `mapstructure:"9"`
+	UnknownBool    bool          `mapstructure:"10"`
 
 	CasterName string `player_name:"CasterObjectID"`
 }
