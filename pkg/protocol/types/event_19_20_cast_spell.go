@@ -13,7 +13,7 @@ type EventCastSpell struct {
 	SpellIndex     int            `mapstructure:"3"`
 	Timestamp1     game.Timestamp `mapstructure:"4"`
 	Timestamp2     game.Timestamp `mapstructure:"5"`
-	UnknownInt     int            `mapstructure:"6"` // 0/1
+	SeqID          int64          `mapstructure:"6"`
 	CasterName     string         `json:"CasterName" player_name:"CasterObjectID"`
 	TargetName     string         `json:"TargetName" player_name:"TargetObjectID"`
 }

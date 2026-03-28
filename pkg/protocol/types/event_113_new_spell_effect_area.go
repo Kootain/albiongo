@@ -9,10 +9,10 @@ import (
 type EventNewSpellEffectArea struct {
 	*EventBase
 	EventID        int           `mapstructure:"0"`
-	CasterObjectID int           `mapstructure:"1" json:"CasterObjectID"`
+	CasterObjectID int           `mapstructure:"1"`
 	Pos            game.Position `mapstructure:"2"`
-	Dirction       float64       `mapstructure:"3"`
-	SpellID        int           `mapstructure:"4" json:"SpellID"`
+	Direction      float64       `mapstructure:"3"`
+	SpellID        int           `mapstructure:"4"`
 	UnknownInt     int           `mapstructure:"5"`
 	StartTimestamp int           `mapstructure:"6"`
 	EndTimestamp   int           `mapstructure:"7"`
