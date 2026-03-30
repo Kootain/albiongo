@@ -1,12 +1,12 @@
 export default {
   "app": {
-    "title": "ALBION - 阿瓦隆战斗报告",
+    "title": "ALBION - 战斗报告",
     "searchPlaceholder": "搜索玩家名称...",
     "searchButton": "搜索",
     "loading": "正在获取战斗记录...",
     "errorFetch": "获取玩家数据失败。",
     "emptyTitle": "搜索玩家",
-    "emptyDesc": "输入阿尔比恩 Online 玩家名称以查看他们近期7人左右的小团(阿瓦隆)战斗表现、胜率和武器使用统计。首次被搜索的用户可能需要一定时间加载数据。",
+    "emptyDesc": "输入阿尔比恩 Online 玩家名称以查看他们近期的战斗表现、胜率和武器使用统计。首次被搜索的用户可能需要一定时间加载数据。",
     "recentBattles": "近期战斗",
     "battleUnit": "场",
     "winRate": "胜率",
@@ -21,7 +21,7 @@ export default {
     "losses": "负",
     "loadMore": "加载更多",
     "shareBtn": "分享",
-    "shareText": "快来查看我的albion阿瓦隆战斗报告！",
+    "shareText": "快来查看我的Albion战斗报告！",
     "wechatShareHint": "请点击右上角 ··· 发送给朋友",
     "copySuccess": "链接已复制，快去分享吧！",
     "copyFailed": "复制失败，请手动复制链接"

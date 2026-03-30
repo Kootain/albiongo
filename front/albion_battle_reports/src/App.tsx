@@ -96,8 +96,8 @@ export default function App() {
   const handleShare = async () => {
     const isWechat = /MicroMessenger/i.test(navigator.userAgent);
     const currentUrl = window.location.href;
-    const shareText = t('app.shareText', { defaultValue: '快来查看我的albion阿瓦隆战斗报告' });
-    const shareTitle = t('app.title', { defaultValue: 'Albion Avalon Report' });
+    const shareText = t('app.shareText', { defaultValue: '快来查看我的Albion战斗报告' });
+    const shareTitle = t('app.title', { defaultValue: 'Albion Battle Report' });
 
     if (isWechat) {
       showToast(t('app.wechatShareHint', { defaultValue: '请点击右上角 ··· 发送给朋友' }), 'wechat');
