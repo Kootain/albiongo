@@ -76,7 +76,9 @@ const resources = {
       item: "Item",
       spell: "Spell",
       "Min P-Level": "Min P-Level",
-      "Recent Time": "Recent Time(min)"
+      "Recent Time": "Recent Time(min)",
+      "Exclude Guild": "Exclude Guild",
+      "Exclude Alliance": "Exclude Alliance"
     },
   },
   zh: {
@@ -157,6 +159,8 @@ const resources = {
       item: "物品",
       spell: "技能",
       "Min P-Level": "最小P级",
+      "Exclude Guild": "排除公会",
+      "Exclude Alliance": "排除联盟",
     },
   },
 };
