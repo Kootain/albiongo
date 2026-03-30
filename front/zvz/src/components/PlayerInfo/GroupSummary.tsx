@@ -3,6 +3,8 @@ import { Player, ItemData } from '../../types';
 import { getItem, getLocalizedText } from '../../utils/dataManager';
 import { useTranslation } from 'react-i18next';
 
+const image_proxy = 'https://pic.kootain.workers.dev/?url='
+
 interface GroupSummaryProps {
   players: Player[];
   showWeapon?: boolean;
@@ -100,7 +102,7 @@ export const GroupSummary: React.FC<GroupSummaryProps> = ({
            return (
              <div key={item.NameID || item.UniqueName} className="flex items-center bg-zinc-800 rounded px-1.5 py-1 border border-zinc-700/50 hover:border-zinc-500 transition-colors cursor-help" title={tooltip}>
                <img 
-                 src={`https://render.albiononline.com/v1/item/${item.UniqueName}`} 
+                 src={`${image_proxy}https://render.albiononline.com/v1/item/${item.UniqueName}`} 
                  className="w-8 h-8 mr-1.5 object-contain" 
                  alt={name} 
                />
