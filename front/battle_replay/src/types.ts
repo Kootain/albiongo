@@ -40,6 +40,14 @@ export interface RawLogEntry {
   TargetObjectIDs?: number[];
   SpellIndices?: number[];
 
+  // Code 16: EventCastCancel
+  IsInterupted?: boolean;
+
+  // Code 113: EventNewSpellEffectArea
+  EventID?: number;
+  StartTimestamp?: number;
+  EndTimestamp?: number;
+
   // Code 13: EventAttack
   AttackerObjectID?: number;
   AttackerName?: string;
@@ -89,6 +97,8 @@ export type EventType =
   | 'kill'              // Code 165：死亡/击杀
   | 'forced_movement'   // Code 141：强制位移（CC/击退）
   | 'spell_effect_area' // Code 113：持续 AoE 区域
+  | 'cast_cancel'       // Code 16：施法取消/被打断
+  | 'channeling_ended'  // Code 24：吟唱结束
   | 'mounted'           // Code 209：骑乘完成
   | 'mount_start'       // Code 210：开始骑乘
   | 'unknown';
@@ -109,6 +119,8 @@ export const EVENT_TYPE_LABELS: Record<EventType, string> = {
   kill:             '击杀',
   forced_movement:  '强制位移',
   spell_effect_area:'AoE区域',
+  cast_cancel:      '施法取消',
+  channeling_ended: '吟唱结束',
   mounted:          '骑乘',
   mount_start:      '开始骑乘',
   unknown:          '未知',
@@ -130,6 +142,8 @@ export const EVENT_TYPE_COLORS: Record<EventType, string> = {
   kill:             '#f87171',  // red-400
   forced_movement:  '#22d3ee',  // cyan-400
   spell_effect_area:'#e879f9',  // fuchsia-400
+  cast_cancel:      '#f87171',  // red-400
+  channeling_ended: '#c084fc',  // purple-400
   mounted:          '#a3e635',  // lime-400
   mount_start:      '#84cc16',  // lime-500
   unknown:          '#3f3f46',  // zinc-700
@@ -209,4 +223,36 @@ export interface TimelineViewport {
   startTs: number;   // 左边界时间戳
   endTs: number;     // 右边界时间戳
   scrollY: number;   // 纵向滚动偏移（像素）
+}
+
+// ─── 施法序列聚合类型 ─────────────────────────────────────────────────────────────
+
+/** new_spell_effect_area 关联的 AoE 区域 */
+export interface AoeZone {
+  eventId: number;       // new_spell_effect_area 的 EventID 字段
+  startTs: number;       // StartTimestamp（毫秒）
+  endTs: number;         // EndTimestamp（毫秒）
+  spellId: number;
+}
+
+/** 一次完整的施法序列（cast_start → cast_finish/cancel → cast_spell 及后续关联） */
+export interface SpellSequence {
+  id: string;            // `${actorId}_${spellIndex}_${castStartTs}`
+  actorId: number;
+  actorName: string;
+  spellIndex: number;
+  spellId?: number;      // 来自 cast_spell 事件
+
+  castStartTs: number;
+  castEndTs: number;     // cast_finish/cast_cancel 时间；unknown 时等于 castStartTs
+
+  outcome: 'success' | 'interrupted' | 'cancelled' | 'unknown';
+  channelingEndTs?: number;  // channeling_ended 时间戳
+
+  hitCount: number;          // 关联的 cast_hit 数量
+  aoeZones: AoeZone[];       // 关联的 new_spell_effect_area
+
+  castStartEvent: BattleEvent;
+  castEndEvent?: BattleEvent;
+  castSpellEvent?: BattleEvent;
 }

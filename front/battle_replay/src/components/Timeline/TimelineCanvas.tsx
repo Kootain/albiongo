@@ -1,20 +1,19 @@
 import React, { useCallback, useEffect, useRef } from 'react';
 import { useBattleStore } from '../../store/useBattleStore';
 import { useTimelineStore } from '../../store/useTimelineStore';
-import type { BattleEvent } from '../../types';
+import type { BattleEvent, SpellSequence } from '../../types';
 import { EVENT_TYPE_COLORS } from '../../types';
 
 // ─── 渲染常量 ─────────────────────────────────────────────────────────────────
-const HEADER_HEIGHT = 44;   // 时间轴头部高度（px）
-const DOT_RADIUS = 4;
-const DOT_GAP = 3;
-const DOT_STEP = DOT_RADIUS * 2 + DOT_GAP;   // 每个事件点占用的纵向空间
-const BUCKET_WIDTH_PX = DOT_RADIUS * 2 + 2;  // 横向 bucket 宽度（px）
+const HEADER_HEIGHT   = 44;
+const DOT_RADIUS      = 4;
+const DOT_GAP         = 3;
+const DOT_STEP        = DOT_RADIUS * 2 + DOT_GAP;
+const BUCKET_WIDTH_PX = DOT_RADIUS * 2 + 2;
 const SCROLLBAR_WIDTH = 8;
 
 // ─── 工具函数 ─────────────────────────────────────────────────────────────────
 
-/** 二分查找左边界（第一个 ts >= target 的索引） */
 function bisectLeft(events: BattleEvent[], target: number): number {
   let lo = 0, hi = events.length;
   while (lo < hi) {
@@ -24,7 +23,6 @@ function bisectLeft(events: BattleEvent[], target: number): number {
   return lo;
 }
 
-/** 二分查找右边界（第一个 ts > target 的索引） */
 function bisectRight(events: BattleEvent[], target: number): number {
   let lo = 0, hi = events.length;
   while (lo < hi) {
@@ -34,7 +32,6 @@ function bisectRight(events: BattleEvent[], target: number): number {
   return lo;
 }
 
-/** 格式化时间轴刻度标签（UTC HH:MM:SS） */
 function formatTickLabel(ts: number): string {
   const d = new Date(ts);
   const h = String(d.getUTCHours()).padStart(2, '0');
@@ -43,39 +40,59 @@ function formatTickLabel(ts: number): string {
   return `${h}:${m}:${s}`;
 }
 
-// ─── 组件 ─────────────────────────────────────────────────────────────────────
+/** 查找事件对应的 SpellSequence（通过 castStartEvent / castEndEvent / castSpellEvent） */
+function findSequenceForEvent(
+  event: BattleEvent,
+  spellSequences: SpellSequence[],
+): SpellSequence | null {
+  for (const seq of spellSequences) {
+    if (
+      seq.castStartEvent.id === event.id ||
+      seq.castEndEvent?.id  === event.id ||
+      seq.castSpellEvent?.id === event.id
+    ) {
+      return seq;
+    }
+  }
+  return null;
+}
+
+// ─── 渲染状态 ─────────────────────────────────────────────────────────────────
 
 interface RenderedDot {
   event: BattleEvent;
   screenX: number;
-  logicalY: number;  // 未减 scrollY 的绝对纵坐标
+  logicalY: number;
 }
 
+// ─── 组件 ─────────────────────────────────────────────────────────────────────
+
 export const TimelineCanvas: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const canvasRef    = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const renderedDotsRef = useRef<RenderedDot[]>([]);
-  const isDraggingRef = useRef(false);
-  const hasDraggedRef = useRef(false);
-  const dragStartXRef = useRef(0);
-  const dragStartTsRef = useRef(0);
+  const isDraggingRef   = useRef(false);
+  const hasDraggedRef   = useRef(false);
+  const dragStartXRef   = useRef(0);
+  const dragStartTsRef  = useRef(0);
 
   const filteredEvents = useBattleStore(s => s.filteredEvents);
-  const showAllEvents = useBattleStore(s => s.showAllEvents);
-  const session = useBattleStore(s => s.session);
-  const isLive  = useBattleStore(s => s.isLive);
+  const showAllEvents  = useBattleStore(s => s.showAllEvents);
+  const session        = useBattleStore(s => s.session);
+  const isLive         = useBattleStore(s => s.isLive);
+  const spellSequences = useBattleStore(s => s.spellSequences);
 
   const displayEvents = showAllEvents ? (session?.events ?? []) : filteredEvents;
 
-  const viewport = useTimelineStore(s => s.viewport);
-  const totalLogicalHeight = useTimelineStore(s => s.totalLogicalHeight);
-  const selectEvent = useTimelineStore(s => s.selectEvent);
-  const zoom = useTimelineStore(s => s.zoom);
-  const pan = useTimelineStore(s => s.pan);
-  const scrollBy = useTimelineStore(s => s.scrollBy);
+  const viewport             = useTimelineStore(s => s.viewport);
+  const totalLogicalHeight   = useTimelineStore(s => s.totalLogicalHeight);
+  const selectEvent          = useTimelineStore(s => s.selectEvent);
+  const selectSequence       = useTimelineStore(s => s.selectSequence);
+  const zoom                 = useTimelineStore(s => s.zoom);
+  const scrollBy             = useTimelineStore(s => s.scrollBy);
   const setTotalLogicalHeight = useTimelineStore(s => s.setTotalLogicalHeight);
 
-  // ─── 渲染主逻辑 ─────────────────────────────────────────────────────────────
+  // ─── 渲染 ──────────────────────────────────────────────────────────────────
 
   const draw = useCallback(() => {
     const canvas = canvasRef.current;
@@ -89,14 +106,13 @@ export const TimelineCanvas: React.FC = () => {
     const timeRange = endTs - startTs;
     if (timeRange <= 0) return;
 
-    // 清空
     ctx.clearRect(0, 0, W, H);
     ctx.fillStyle = '#09090b';
     ctx.fillRect(0, 0, W, H);
 
     const contentW = W - SCROLLBAR_WIDTH;
 
-    // ── 绘制时间轴头部 ────────────────────────────────────────────────────────
+    // ── 时间轴头部 ────────────────────────────────────────────────────────────
     ctx.fillStyle = '#18181b';
     ctx.fillRect(0, 0, contentW, HEADER_HEIGHT);
     ctx.strokeStyle = '#3f3f46';
@@ -106,7 +122,6 @@ export const TimelineCanvas: React.FC = () => {
     ctx.lineTo(contentW, HEADER_HEIGHT);
     ctx.stroke();
 
-    // 刻度线
     const tickCount = Math.floor(contentW / 80);
     const tickIntervalMs = Math.ceil(timeRange / tickCount / 1000) * 1000;
 
@@ -134,12 +149,11 @@ export const TimelineCanvas: React.FC = () => {
       ctx.fillText(formatTickLabel(ts), x, HEADER_HEIGHT - 12);
     }
 
-    // ── 找出当前视口内的事件 ─────────────────────────────────────────────────
+    // ── 可见事件分 bucket 堆叠渲染 ────────────────────────────────────────────
     const lo = bisectLeft(displayEvents, startTs);
     const hi = bisectRight(displayEvents, endTs);
     const visibleEvents = displayEvents.slice(lo, hi);
 
-    // ── 按 X bucket 分组，计算堆叠位置 ───────────────────────────────────────
     const bucketMap = new Map<number, BattleEvent[]>();
     for (const ev of visibleEvents) {
       const x = ((ev.ts - startTs) / timeRange) * contentW;
@@ -159,7 +173,6 @@ export const TimelineCanvas: React.FC = () => {
         if (logicalY + DOT_RADIUS > maxLogicalY) maxLogicalY = logicalY + DOT_RADIUS;
 
         const screenY = logicalY - scrollY;
-        // 纵向裁剪
         if (screenY + DOT_RADIUS < HEADER_HEIGHT || screenY - DOT_RADIUS > H) return;
 
         dots.push({ event: ev, screenX: bucketCenterX, logicalY });
@@ -179,7 +192,7 @@ export const TimelineCanvas: React.FC = () => {
       setTotalLogicalHeight(newTotalHeight);
     }
 
-    // ── 绘制自定义滚动条 ──────────────────────────────────────────────────────
+    // ── 滚动条 ────────────────────────────────────────────────────────────────
     const scrollableH = H - HEADER_HEIGHT;
     if (totalLogicalHeight > scrollableH) {
       const thumbH = Math.max(30, (scrollableH / totalLogicalHeight) * scrollableH);
@@ -193,25 +206,22 @@ export const TimelineCanvas: React.FC = () => {
       ctx.roundRect(contentW + 1, thumbY, SCROLLBAR_WIDTH - 2, thumbH, 3);
       ctx.fill();
     }
-  }, [displayEvents, session, viewport, totalLogicalHeight, setTotalLogicalHeight]);
+  }, [displayEvents, viewport, totalLogicalHeight, setTotalLogicalHeight]);
 
-  // ─── 响应视口和数据变化 ──────────────────────────────────────────────────────
+  // ─── 响应状态变化重绘 ────────────────────────────────────────────────────────
   useEffect(() => {
-    const canvas = canvasRef.current;
+    const canvas    = canvasRef.current;
     const container = containerRef.current;
     if (!canvas || !container) return;
 
-    // 同步 canvas 尺寸
     const { width, height } = container.getBoundingClientRect();
     if (canvas.width !== Math.floor(width) || canvas.height !== Math.floor(height)) {
-      canvas.width = Math.floor(width);
+      canvas.width  = Math.floor(width);
       canvas.height = Math.floor(height);
     }
-
     draw();
   });
 
-  // ─── Canvas 尺寸同步（ResizeObserver） ────────────────────────────────────
   useEffect(() => {
     const container = containerRef.current;
     if (!container) return;
@@ -220,7 +230,7 @@ export const TimelineCanvas: React.FC = () => {
     return () => ro.disconnect();
   }, [draw]);
 
-  // ─── 鼠标事件：缩放（原生监听，passive:false 才能 preventDefault） ────────
+  // ─── 滚轮（native，passive:false） ────────────────────────────────────────
   const handleWheelNative = useCallback((e: WheelEvent) => {
     e.preventDefault();
     const canvas = canvasRef.current;
@@ -229,14 +239,11 @@ export const TimelineCanvas: React.FC = () => {
     const mouseX = e.clientX - rect.left;
 
     if (e.ctrlKey || e.metaKey) {
-      // Ctrl+滚轮：横向缩放
       const { startTs, endTs } = viewport;
       const timeRange = endTs - startTs;
-      const anchorTs = startTs + (mouseX / canvas.width) * timeRange;
-      const factor = e.deltaY < 0 ? 1.3 : 1 / 1.3;
-      zoom(factor, anchorTs);
+      const anchorTs  = startTs + (mouseX / canvas.width) * timeRange;
+      zoom(e.deltaY < 0 ? 1.3 : 1 / 1.3, anchorTs);
     } else {
-      // 普通滚轮：纵向滚动
       scrollBy(e.deltaY);
     }
   }, [viewport, zoom, scrollBy]);
@@ -248,12 +255,12 @@ export const TimelineCanvas: React.FC = () => {
     return () => canvas.removeEventListener('wheel', handleWheelNative);
   }, [handleWheelNative]);
 
-  // ─── 鼠标事件：拖拽平移 ────────────────────────────────────────────────────
+  // ─── 拖拽平移 ──────────────────────────────────────────────────────────────
   const handlePointerDown = useCallback((e: React.PointerEvent) => {
     if (e.button !== 0) return;
-    isDraggingRef.current = true;
-    hasDraggedRef.current = false;
-    dragStartXRef.current = e.clientX;
+    isDraggingRef.current  = true;
+    hasDraggedRef.current  = false;
+    dragStartXRef.current  = e.clientX;
     dragStartTsRef.current = viewport.startTs;
     (e.target as HTMLElement).setPointerCapture(e.pointerId);
   }, [viewport]);
@@ -265,23 +272,19 @@ export const TimelineCanvas: React.FC = () => {
     const dx = e.clientX - dragStartXRef.current;
     if (Math.abs(dx) > 4) hasDraggedRef.current = true;
     const timeRange = viewport.endTs - viewport.startTs;
-    const deltaTs = -(dx / canvas.width) * timeRange;
-    const newStart = dragStartTsRef.current + deltaTs;
-    useTimelineStore.getState().setViewport({
-      startTs: newStart,
-      endTs: newStart + timeRange,
-    });
+    const deltaTs   = -(dx / canvas.width) * timeRange;
+    const newStart  = dragStartTsRef.current + deltaTs;
+    useTimelineStore.getState().setViewport({ startTs: newStart, endTs: newStart + timeRange });
   }, [viewport]);
 
   const handlePointerUp = useCallback(() => {
     isDraggingRef.current = false;
   }, []);
 
-  // ─── 点击事件：命中检测 ────────────────────────────────────────────────────
+  // ─── 点击：命中事件点 → 查找 SpellSequence ────────────────────────────────
   const handleClick = useCallback((e: React.MouseEvent) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    // 拖拽结束后不触发 click
     if (hasDraggedRef.current) { hasDraggedRef.current = false; return; }
     const rect = canvas.getBoundingClientRect();
     const mx = e.clientX - rect.left;
@@ -289,20 +292,30 @@ export const TimelineCanvas: React.FC = () => {
 
     if (my < HEADER_HEIGHT) return;
     const { scrollY } = viewport;
+
     let closest: BattleEvent | null = null;
-    let minDist = DOT_RADIUS * 2.5;  // 命中半径（略大于点半径，提升可点击性）
+    let minDist = DOT_RADIUS * 2.5;
 
     for (const dot of renderedDotsRef.current) {
       const screenY = dot.logicalY - scrollY;
       const dist = Math.sqrt((mx - dot.screenX) ** 2 + (my - screenY) ** 2);
-      if (dist < minDist) {
-        minDist = dist;
-        closest = dot.event;
-      }
+      if (dist < minDist) { minDist = dist; closest = dot.event; }
     }
 
-    selectEvent(closest);
-  }, [viewport, selectEvent]);
+    if (!closest) {
+      selectSequence(null);
+      selectEvent(null);
+      return;
+    }
+
+    const seq = findSequenceForEvent(closest, spellSequences);
+    if (seq) {
+      selectSequence(seq);
+    } else {
+      selectSequence(null);
+      selectEvent(closest);
+    }
+  }, [viewport, spellSequences, selectSequence, selectEvent]);
 
   // ─── 空状态 ────────────────────────────────────────────────────────────────
   if (!session) {
@@ -326,7 +339,6 @@ export const TimelineCanvas: React.FC = () => {
       <canvas
         ref={canvasRef}
         className="absolute inset-0 cursor-crosshair"
-
         onPointerDown={handlePointerDown}
         onPointerMove={handlePointerMove}
         onPointerUp={handlePointerUp}

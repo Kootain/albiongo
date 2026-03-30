@@ -1,10 +1,11 @@
 import React from 'react';
 import { loadGameData } from '@albion/game-data';
-import { BarChart2, Clock, List } from 'lucide-react';
+import { BarChart2, Clock, List, Users } from 'lucide-react';
 import { EventDrawer } from './components/EventDrawer';
 import { EventListPanel } from './components/EventListPanel';
 import { FilterPanel } from './components/FilterPanel';
 import { StatsPanel } from './components/StatsPanel';
+import { PlayerTimelineCanvas } from './components/Timeline/PlayerTimelineCanvas';
 import { TimelineCanvas } from './components/Timeline/TimelineCanvas';
 import { TopBar } from './components/TopBar';
 import { useBattleStore } from './store/useBattleStore';
@@ -14,7 +15,7 @@ import { useLiveWS } from './hooks/useLiveWS';
 import { usePlayerSync } from './hooks/usePlayerSync';
 
 type SourceMode = 'file' | 'live';
-type ViewMode   = 'timeline' | 'events' | 'stats';
+type ViewMode   = 'timeline' | 'player_timeline' | 'events' | 'stats';
 
 // ── 实时 WS 连接（仅在 live 模式下挂载） ─────────────────────────────────────
 
@@ -135,7 +136,17 @@ const App: React.FC = () => {
               : 'text-zinc-500 hover:text-zinc-300 border border-transparent'}`}
         >
           <Clock size={12} />
-          时间轴
+          事件流
+        </button>
+        <button
+          onClick={() => setView('player_timeline')}
+          className={`flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-medium transition-colors
+            ${view === 'player_timeline'
+              ? 'bg-indigo-600/20 text-indigo-400 border border-indigo-500/30'
+              : 'text-zinc-500 hover:text-zinc-300 border border-transparent'}`}
+        >
+          <Users size={12} />
+          玩家轴
         </button>
         <button
           onClick={() => setView('events')}
@@ -167,6 +178,12 @@ const App: React.FC = () => {
         {view === 'timeline' && (
           <>
             <TimelineCanvas />
+            <EventDrawer />
+          </>
+        )}
+        {view === 'player_timeline' && (
+          <>
+            <PlayerTimelineCanvas />
             <EventDrawer />
           </>
         )}

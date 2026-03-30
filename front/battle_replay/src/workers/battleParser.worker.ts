@@ -14,10 +14,12 @@ const CODE_HEALTH_UPDATES   = 7;
 const CODE_ENERGY_UPDATE    = 8;
 const CODE_ATTACK           = 13;
 const CODE_CAST_START       = 14;
+const CODE_CAST_CANCEL      = 16;
 const CODE_CAST_FINISHED    = 18;
 const CODE_CAST_SPELL       = 19;
 const CODE_CAST_HIT         = 21;
 const CODE_CAST_HITS        = 22;
+const CODE_CHANNELING_ENDED = 24;
 const CODE_NEW_CHARACTER    = 29;
 const CODE_EQUIPMENT_CHANGED= 90;
 const CODE_SPELL_EFFECT_AREA= 113;
@@ -49,6 +51,7 @@ function classifyEvent(entry: RawLogEntry): EventType {
     case CODE_CAST_HIT:          return 'cast_hit';
     case CODE_CAST_HITS:         return 'cast_hits';
     case CODE_CAST_START:        return 'cast_start';
+    case CODE_CAST_CANCEL:       return 'cast_cancel';
     case CODE_CAST_FINISHED:     return 'cast_finished';
     case CODE_ATTACK:            return 'attack';
     case CODE_HEALTH_UPDATE:     return 'health_update';
@@ -58,6 +61,7 @@ function classifyEvent(entry: RawLogEntry): EventType {
     case CODE_DIED:              return 'kill';
     case CODE_FORCED_MOVEMENT:   return 'forced_movement';
     case CODE_SPELL_EFFECT_AREA: return 'spell_effect_area';
+    case CODE_CHANNELING_ENDED:  return 'channeling_ended';
     case CODE_MOUNTED:           return 'mounted';
     case CODE_MOUNT_START:       return 'mount_start';
     default: return 'unknown';
@@ -112,6 +116,26 @@ function buildEvent(entry: RawLogEntry, players: Record<number, PlayerProfile>):
         actorGuild:p?.guildName,
         // SpellID (新格式 Data[5]) 是直接 DB ID；SpellIndex 同Key 保留兼容
         spellId: entry.SpellID ?? dNum(entry, 5) ?? entry.SpellIndex,
+      };
+    }
+    case 'cast_cancel': {
+      // Code 16: ObjectID=施法者, IsInterupted=是否被打断, Name=玩家名
+      const p = profile(entry.ObjectID);
+      return {
+        ...base,
+        actorId:   entry.ObjectID,
+        actorName: entry.Name ?? p?.name,
+        actorGuild:p?.guildName,
+      };
+    }
+    case 'channeling_ended': {
+      // Code 24: ObjectID=施法者, Name=玩家名
+      const p = profile(entry.ObjectID);
+      return {
+        ...base,
+        actorId:   entry.ObjectID,
+        actorName: entry.Name ?? p?.name,
+        actorGuild:p?.guildName,
       };
     }
     case 'cast_hit': {

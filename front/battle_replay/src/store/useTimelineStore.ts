@@ -1,9 +1,10 @@
 import { create } from 'zustand';
-import type { BattleEvent, TimelineViewport } from '../types';
+import type { BattleEvent, SpellSequence, TimelineViewport } from '../types';
 
 interface TimelineState {
   viewport: TimelineViewport;
   selectedEvent: BattleEvent | null;
+  selectedSequence: SpellSequence | null;
   totalLogicalHeight: number;
   sessionStartTs: number;
   sessionEndTs: number;
@@ -17,6 +18,7 @@ interface TimelineState {
   pan: (deltaTs: number) => void;
   scrollBy: (deltaY: number) => void;
   selectEvent: (event: BattleEvent | null) => void;
+  selectSequence: (seq: SpellSequence | null) => void;
   setTotalLogicalHeight: (h: number) => void;
 }
 
@@ -31,6 +33,7 @@ function clampRange(start: number, end: number, sessStart: number, sessEnd: numb
 export const useTimelineStore = create<TimelineState>((set, get) => ({
   viewport: { startTs: 0, endTs: 0, scrollY: 0 },
   selectedEvent: null,
+  selectedSequence: null,
   totalLogicalHeight: 0,
   sessionStartTs: 0,
   sessionEndTs: 0,
@@ -51,6 +54,7 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
     set({
       viewport: { startTs: viewStartTs ?? sessionStartTs, endTs: viewEndTs ?? sessionEndTs, scrollY: 0 },
       selectedEvent: null,
+      selectedSequence: null,
       sessionStartTs,
       sessionEndTs,
       sessionDurationMs: sessionEndTs - sessionStartTs,
@@ -94,6 +98,11 @@ export const useTimelineStore = create<TimelineState>((set, get) => ({
   },
 
   selectEvent: (event) => set({ selectedEvent: event }),
+
+  selectSequence: (seq) => set({
+    selectedSequence: seq,
+    selectedEvent: seq?.castStartEvent ?? null,
+  }),
 
   setTotalLogicalHeight: (h) => set({ totalLogicalHeight: h }),
 }));

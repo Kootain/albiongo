@@ -3,7 +3,7 @@ import { X } from 'lucide-react';
 import React from 'react';
 import { useBattleStore } from '../store/useBattleStore';
 import { useTimelineStore } from '../store/useTimelineStore';
-import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, type BattleEvent, type EventType } from '../types';
+import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, type BattleEvent, type EventType, type SpellSequence } from '../types';
 
 // ── 工具函数 ──────────────────────────────────────────────────────────────────
 
@@ -104,6 +104,87 @@ const RawDataView: React.FC<{ data: unknown }> = ({ data }) => {
           {JSON.stringify(data, null, 2)}
         </pre>
       )}
+    </div>
+  );
+};
+
+// ── 施法序列详情 ──────────────────────────────────────────────────────────────
+
+const OUTCOME_LABELS: Record<SpellSequence['outcome'], { label: string; color: string }> = {
+  success:     { label: '成功',   color: 'text-green-400' },
+  interrupted: { label: '被打断', color: 'text-red-400' },
+  cancelled:   { label: '取消',   color: 'text-zinc-500' },
+  unknown:     { label: '进行中', color: 'text-zinc-400' },
+};
+
+const SpellSequenceDetail: React.FC<{ seq: SpellSequence; startTs: number }> = ({ seq, startTs }) => {
+  const spellName = resolveSpell(seq.spellId);
+  const outcome   = OUTCOME_LABELS[seq.outcome];
+  const castDuration = seq.castEndTs - seq.castStartTs;
+  const channelingDuration =
+    seq.channelingEndTs !== undefined && seq.castSpellEvent
+      ? seq.channelingEndTs - seq.castSpellEvent.ts
+      : undefined;
+
+  return (
+    <div className="space-y-0">
+      {/* 施法者 */}
+      <Row label="施法者" value={<PlayerBadge name={seq.actorName} />} />
+
+      {/* 技能 */}
+      {spellName
+        ? <Row label="技能" value={spellName} />
+        : seq.spellId !== undefined && <Row label="技能 ID" value={String(seq.spellId)} />
+      }
+
+      {/* 施法结果 */}
+      <Row
+        label="结果"
+        value={<span className={outcome.color}>{outcome.label}</span>}
+      />
+
+      {/* 施法时长 */}
+      <Row label="施法时长" value={`${castDuration} ms`} />
+
+      {/* 开始时间 */}
+      <Row label="开始" value={`${formatTs(seq.castStartTs, startTs)} (${formatAbsoluteTs(seq.castStartTs)})`} />
+
+      {/* 命中数 */}
+      <Row
+        label="命中"
+        value={
+          <span className={seq.hitCount > 0 ? 'text-indigo-400' : 'text-zinc-500'}>
+            {seq.hitCount} 次
+          </span>
+        }
+      />
+
+      {/* 吟唱时长 */}
+      {channelingDuration !== undefined && (
+        <Row label="吟唱时长" value={`${channelingDuration} ms`} />
+      )}
+
+      {/* AoE 区域 */}
+      {seq.aoeZones.length > 0 && (
+        <Row
+          label="AoE 区域"
+          value={
+            <div className="space-y-1">
+              <span className="text-zinc-400">{seq.aoeZones.length} 个区域</span>
+              {seq.aoeZones.map((z, i) => (
+                <div key={z.eventId} className="text-xs text-zinc-500">
+                  #{i + 1}：{z.endTs - z.startTs} ms
+                </div>
+              ))}
+            </div>
+          }
+        />
+      )}
+
+      {/* 原始事件（可折叠） */}
+      <div className="pt-2">
+        <RawDataView data={seq.castStartEvent.raw} />
+      </div>
     </div>
   );
 };
@@ -230,11 +311,18 @@ const EventDetail: React.FC<{ event: BattleEvent; startTs: number }> = ({ event,
 // ── 抽屉容器 ──────────────────────────────────────────────────────────────────
 
 export const EventDrawer: React.FC = () => {
-  const selectedEvent = useTimelineStore(s => s.selectedEvent);
-  const selectEvent   = useTimelineStore(s => s.selectEvent);
-  const session       = useBattleStore(s => s.session);
+  const selectedEvent    = useTimelineStore(s => s.selectedEvent);
+  const selectedSequence = useTimelineStore(s => s.selectedSequence);
+  const selectEvent      = useTimelineStore(s => s.selectEvent);
+  const selectSequence   = useTimelineStore(s => s.selectSequence);
+  const session          = useBattleStore(s => s.session);
 
-  const isOpen = selectedEvent !== null;
+  const isOpen = selectedSequence !== null || selectedEvent !== null;
+
+  const handleClose = () => {
+    selectSequence(null);
+    selectEvent(null);
+  };
 
   return (
     <div
@@ -244,19 +332,25 @@ export const EventDrawer: React.FC = () => {
         ${isOpen ? 'w-72' : 'w-0 border-l-0'}
       `}
     >
-      {isOpen && selectedEvent && (
+      {isOpen && (
         <>
           <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-800 flex-shrink-0">
-            <span className="text-sm font-semibold text-zinc-100">事件详情</span>
+            <span className="text-sm font-semibold text-zinc-100">
+              {selectedSequence ? '施法序列详情' : '事件详情'}
+            </span>
             <button
-              onClick={() => selectEvent(null)}
+              onClick={handleClose}
               className="p-1 text-zinc-500 hover:text-red-400 transition-colors rounded"
             >
               <X size={16} />
             </button>
           </div>
           <div className="flex-1 overflow-y-auto px-4 py-3">
-            <EventDetail event={selectedEvent} startTs={session?.startTs ?? 0} />
+            {selectedSequence ? (
+              <SpellSequenceDetail seq={selectedSequence} startTs={session?.startTs ?? 0} />
+            ) : selectedEvent ? (
+              <EventDetail event={selectedEvent} startTs={session?.startTs ?? 0} />
+            ) : null}
           </div>
         </>
       )}
