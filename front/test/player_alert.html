@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>新玩家报警器 - AlbionGo</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            transition: background-color 0.2s ease;
+        }
+        body.alert-flash {
+            background-color: #ff4c4c !important;
+        }
+        .container {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            margin: 20px;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        h1 {
+            color: #333;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+            margin-top: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .status-panel {
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .status-connected { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status-disconnected { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .status-connecting { background-color: #fff3cd; color: #856404; border: 1px solid #ffeeba; }
+        
+        .main-content {
+            display: flex;
+            gap: 20px;
+            flex: 1;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+
+        .players-panel {
+            flex: 2;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fafafa;
+        }
+        .panel-header {
+            background-color: #f8f9fa;
+            padding: 10px;
+            border-bottom: 1px solid #ddd;
+            font-weight: bold;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .whitelist-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: #fafafa;
+        }
+
+        .list-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 10px;
+        }
+
+        .player-card {
+            background: white;
+            border: 1px solid #e0e0e0;
+            border-radius: 6px;
+            padding: 12px;
+            margin-bottom: 10px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .player-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .player-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .player-guild {
+            font-size: 14px;
+            color: #7f8c8d;
+        }
+        .player-equipment {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 5px;
+        }
+        .equip-item {
+            background-color: #e3f2fd;
+            color: #1565c0;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+
+        button {
+            padding: 6px 12px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+        }
+        button:hover { background-color: #0056b3; }
+        button.btn-whitelist { background-color: #28a745; }
+        button.btn-whitelist:hover { background-color: #218838; }
+        button.btn-danger { background-color: #dc3545; }
+        button.btn-danger:hover { background-color: #c82333; }
+
+        .whitelist-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border: 1px solid #eee;
+            margin-bottom: 5px;
+            border-radius: 4px;
+        }
+        .whitelist-form {
+            display: flex;
+            gap: 5px;
+            padding: 10px;
+            border-top: 1px solid #ddd;
+            background-color: white;
+        }
+        .whitelist-form input {
+            flex: 1;
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        
+        .timestamp {
+            font-size: 12px;
+            color: #999;
+        }
+
+        #flash-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 0, 0, 0.4);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.1s;
+            z-index: 9999;
+        }
+        #flash-overlay.active {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="flash-overlay"></div>
+    <div class="container">
+        <h1>
+            新玩家报警器
+            <div id="status" class="status-disconnected">连接状态: 断开</div>
+        </h1>
+        
+        <div class="main-content">
+            <div class="players-panel">
+                <div class="panel-header">
+                    <span>发现的玩家 (<span id="player-count">0</span>)</span>
+                    <button onclick="clearPlayers()">清空列表</button>
+                </div>
+                <div id="players-list" class="list-container">
+                    <!-- Player cards will be inserted here -->
+                </div>
+            </div>
+
+            <div class="whitelist-panel">
+                <div class="panel-header">
+                    <span>白名单 (<span id="whitelist-count">0</span>)</span>
+                </div>
+                <div id="whitelist-list" class="list-container">
+                    <!-- Whitelist items will be inserted here -->
+                </div>
+                <div class="whitelist-form">
+                    <input type="text" id="whitelist-input" placeholder="输入玩家名字加白">
+                    <button onclick="addManualWhitelist()">添加</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Data Managers
+        const itemManager = {
+            items: {},
+            async load() {
+                try {
+                    const res = await fetch('http://localhost:8081/data/indexedItems.json');
+                    const data = await res.json();
+                    data.forEach(item => {
+                        this.items[item.Index] = item;
+                    });
+                    console.log(`Loaded ${Object.keys(this.items).length} items`);
+                } catch (e) {
+                    console.error("Failed to load indexedItems.json", e);
+                }
+            },
+            getName(index) {
+                if (!index || index === 0) return null;
+                const item = this.items[index];
+                if (!item) return `Unknown(${index})`;
+                if (item.LocalizedNames && item.LocalizedNames['ZH-CN']) {
+                    return item.LocalizedNames['ZH-CN'];
+                }
+                return item.UniqueName;
+            }
+        };
+
+        // State
+        let ws = null;
+        let reconnectTimer = null;
+        let whitelist = new Set(JSON.parse(localStorage.getItem('albion_whitelist') || '[]'));
+        let discoveredPlayers = []; // Store list of recent players to avoid duplicate alerts
+
+        // Elements
+        const statusDiv = document.getElementById('status');
+        const playersList = document.getElementById('players-list');
+        const whitelistList = document.getElementById('whitelist-list');
+        const flashOverlay = document.getElementById('flash-overlay');
+        const playerCountSpan = document.getElementById('player-count');
+        const whitelistCountSpan = document.getElementById('whitelist-count');
+
+        // Init
+        async function init() {
+            await itemManager.load();
+            renderWhitelist();
+            connect();
+        }
+
+        // WebSocket Connection
+        function connect() {
+            updateStatus('connecting', '连接中...');
+            try {
+                ws = new WebSocket('ws://127.0.0.1:8081/events');
+
+                ws.onopen = function() {
+                    updateStatus('connected', '已连接');
+                    if (reconnectTimer) {
+                        clearInterval(reconnectTimer);
+                        reconnectTimer = null;
+                    }
+                };
+
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleEvent(data);
+                    } catch (e) {
+                        console.error("Parse error", e);
+                    }
+                };
+
+                ws.onclose = function() {
+                    ws = null;
+                    updateStatus('disconnected', '已断开');
+                    scheduleReconnect();
+                };
+
+                ws.onerror = function(error) {
+                    console.error('WebSocket Error:', error);
+                    updateStatus('disconnected', '连接错误');
+                };
+
+            } catch (e) {
+                updateStatus('disconnected', '连接失败');
+                scheduleReconnect();
+            }
+        }
+
+        function scheduleReconnect() {
+            if (!reconnectTimer) {
+                reconnectTimer = setInterval(() => {
+                    console.log("Attempting to reconnect...");
+                    connect();
+                }, 3000);
+            }
+        }
+
+        function updateStatus(state, message) {
+            statusDiv.className = `status-panel status-${state}`;
+            statusDiv.textContent = `连接状态: ${message}`;
+        }
+
+        // Event Handling
+        function handleEvent(data) {
+            // Type 0 is Event, Code 29 is EvNewCharacter
+            if (data.Type === 0 && data.Code === 29) {
+                const playerName = data.Name;
+                if (!playerName) return;
+
+                // Check whitelist
+                if (whitelist.has(playerName)) {
+                    return; // Ignore whitelisted players
+                }
+
+                // Add to list and alert
+                addPlayer(data);
+                triggerAlert();
+            }
+        }
+
+        function triggerAlert() {
+            flashOverlay.classList.add('active');
+            document.body.classList.add('alert-flash');
+            setTimeout(() => {
+                flashOverlay.classList.remove('active');
+                document.body.classList.remove('alert-flash');
+            }, 300);
+        }
+
+        function addPlayer(data) {
+            const time = new Date().toLocaleTimeString();
+            
+            // Generate equipment tags
+            let equipHtml = '';
+            if (data.EquipmentIDs && Array.isArray(data.EquipmentIDs)) {
+                data.EquipmentIDs.forEach(id => {
+                    const name = itemManager.getName(id);
+                    if (name) {
+                        equipHtml += `<span class="equip-item">${name}</span>`;
+                    }
+                });
+            }
+
+            const card = document.createElement('div');
+            card.className = 'player-card';
+            card.id = `player-${data.Name}`;
+            
+            let guildStr = '';
+            if (data.GuildName) {
+                guildStr = `[${data.AllianceName || ''}] ${data.GuildName}`;
+            }
+
+            card.innerHTML = `
+                <div class="player-header">
+                    <div>
+                        <span class="player-name">${data.Name}</span>
+                        <span class="player-guild">${guildStr}</span>
+                    </div>
+                    <div>
+                        <span class="timestamp">${time}</span>
+                        <button class="btn-whitelist" onclick="addToWhitelist('${data.Name}')">加白</button>
+                    </div>
+                </div>
+                <div class="player-equipment">
+                    ${equipHtml || '<span style="color:#999;font-size:12px;">无装备信息</span>'}
+                </div>
+            `;
+
+            // Add to top of list
+            playersList.insertBefore(card, playersList.firstChild);
+            
+            // Keep track of count (limit to 100 to avoid memory leak)
+            if (playersList.children.length > 100) {
+                playersList.removeChild(playersList.lastChild);
+            }
+            playerCountSpan.textContent = playersList.children.length;
+        }
+
+        function clearPlayers() {
+            playersList.innerHTML = '';
+            playerCountSpan.textContent = '0';
+        }
+
+        // Whitelist Management
+        function saveWhitelist() {
+            localStorage.setItem('albion_whitelist', JSON.stringify(Array.from(whitelist)));
+            renderWhitelist();
+        }
+
+        function addToWhitelist(name) {
+            if (!name) return;
+            whitelist.add(name);
+            saveWhitelist();
+            
+            // Remove from current players list if present
+            const cards = playersList.querySelectorAll('.player-card');
+            cards.forEach(card => {
+                if (card.id === `player-${name}`) {
+                    playersList.removeChild(card);
+                }
+            });
+            playerCountSpan.textContent = playersList.children.length;
+        }
+
+        function addManualWhitelist() {
+            const input = document.getElementById('whitelist-input');
+            const name = input.value.trim();
+            if (name) {
+                addToWhitelist(name);
+                input.value = '';
+            }
+        }
+
+        function removeFromWhitelist(name) {
+            whitelist.delete(name);
+            saveWhitelist();
+        }
+
+        function renderWhitelist() {
+            whitelistList.innerHTML = '';
+            whitelist.forEach(name => {
+                const item = document.createElement('div');
+                item.className = 'whitelist-item';
+                item.innerHTML = `
+                    <span>${name}</span>
+                    <button class="btn-danger" onclick="removeFromWhitelist('${name}')">移除</button>
+                `;
+                whitelistList.appendChild(item);
+            });
+            whitelistCountSpan.textContent = whitelist.size;
+        }
+
+        // Start
+        window.onload = init;
+
+    </script>
+</body>
+</html>
