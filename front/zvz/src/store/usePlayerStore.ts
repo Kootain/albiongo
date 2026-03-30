@@ -8,6 +8,8 @@ export interface PlayerColumnConfig {
   width: number;
   filterGuild?: string;
   filterAlliance?: string;
+  excludeGuild?: string;
+  excludeAlliance?: string;
   filterTime?: number;
   searchName?: string;
   searchItem?: string;

@@ -1,6 +1,7 @@
 import { create } from 'zustand';
-import type { BattleEvent, BattleSession, EventFilters, EventType } from '../types';
+import type { BattleEvent, BattleSession, EventFilters, EventType, SpellSequence } from '../types';
 import BattleParserWorker from '../workers/battleParser.worker.ts?worker';
+import { buildSpellSequences } from '../utils/spellSequenceBuilder';
 
 interface BattleState {
   session: BattleSession | null;
@@ -12,6 +13,7 @@ interface BattleState {
   filters: EventFilters;
   filteredEvents: BattleEvent[];   // 预计算好的过滤结果
   showAllEvents: boolean;          // 忽略过滤器，展示全部事件
+  spellSequences: SpellSequence[]; // 聚合后的施法序列
 
   // 操作
   loadFile: (file: File) => void;
@@ -41,6 +43,7 @@ function applyFilters(events: BattleEvent[], filters: EventFilters): BattleEvent
 const DEFAULT_EVENT_TYPES: Set<EventType> = new Set([
   'new_character', 'leave',
   'cast_spell', 'cast_hit', 'cast_hits', 'cast_start', 'cast_finished',
+  'cast_cancel', 'channeling_ended',
   'attack', 'health_update', 'health_updates',
   'equipment_change', 'kill', 'forced_movement', 'spell_effect_area',
   'mounted', 'mount_start',
@@ -61,6 +64,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
   filters: { ...DEFAULT_FILTERS, eventTypes: new Set(DEFAULT_EVENT_TYPES) },
   filteredEvents: [],
   showAllEvents: false,
+  spellSequences: [],
 
   initLiveSession: () => {
     const emptySession: BattleSession = {
@@ -70,7 +74,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
       guilds: [], alliances: [],
       eventTypeCounts: {} as BattleSession['eventTypeCounts'],
     };
-    set({ isLive: true, session: emptySession, filteredEvents: [], isLoading: false, loadError: null });
+    set({ isLive: true, session: emptySession, filteredEvents: [], spellSequences: [], isLoading: false, loadError: null });
   },
 
   appendLiveEvent: (event) => {
@@ -96,7 +100,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
     const passes     = showAllEvents || eventMatchesFilters(event, filters);
     const newFiltered = passes ? [...get().filteredEvents, event] : get().filteredEvents;
 
-    set({ session: newSession, filteredEvents: newFiltered });
+    set({ session: newSession, filteredEvents: newFiltered, spellSequences: buildSpellSequences(newEvents) });
   },
 
   loadFile: (file: File) => {
@@ -114,6 +118,7 @@ export const useBattleStore = create<BattleState>((set, get) => ({
         set({
           session: msg.session,
           filteredEvents,
+          spellSequences: buildSpellSequences(msg.session.events),
           isLoading: false,
           loadProgress: 100,
         });

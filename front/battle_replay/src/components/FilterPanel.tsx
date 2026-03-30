@@ -6,7 +6,7 @@ import { EVENT_TYPE_COLORS, EVENT_TYPE_LABELS, type EventType } from '../types';
 const EVENT_TYPE_GROUPS: { label: string; types: EventType[] }[] = [
   {
     label: '战斗核心',
-    types: ['kill', 'attack', 'cast_spell', 'cast_hit', 'cast_hits', 'cast_start', 'cast_finished', 'forced_movement'],
+    types: ['kill', 'attack', 'cast_spell', 'cast_hit', 'cast_hits', 'cast_start', 'cast_finished', 'cast_cancel', 'channeling_ended', 'forced_movement'],
   },
   {
     label: '状态变化',

@@ -36,6 +36,8 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
 
   const filterGuild = config.filterGuild || "";
   const filterAlliance = config.filterAlliance || "";
+  const excludeGuild = config.excludeGuild || "";
+  const excludeAlliance = config.excludeAlliance || "";
   const filterTime = config.filterTime || 0;
   const searchName = config.searchName || "";
   const searchItem = config.searchItem || "";
@@ -71,6 +73,14 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
       if (filterAlliance) {
         const alliances = filterAlliance.split(',');
         if (!alliances.includes(p.AllianceName)) return false;
+      }
+      if (excludeGuild) {
+        const guilds = excludeGuild.split(',');
+        if (guilds.includes(p.GuildName)) return false;
+      }
+      if (excludeAlliance) {
+        const alliances = excludeAlliance.split(',');
+        if (alliances.includes(p.AllianceName)) return false;
       }
       if (searchName) {
         const names = searchName.toLowerCase().split(',');
@@ -152,7 +162,7 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
       const updateTimeB = b.UpdateTime || 0;
       return updateTimeB - updateTimeA; 
     });
-    }, [players, filterGuild, filterAlliance, searchName, filterTime, searchItem, minPLevel, sortByPLevel, sortByWeaponType]);
+    }, [players, filterGuild, filterAlliance, excludeGuild, excludeAlliance, searchName, filterTime, searchItem, minPLevel, sortByPLevel, sortByWeaponType]);
   
     const groupedPlayers = useMemo(() => {
       if (!sortByWeaponType) {
@@ -291,6 +301,8 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
     minPLevel > 0 ? `P >= ${minPLevel}` : null,
     filterGuild ? `G: ${filterGuild}` : null,
     filterAlliance ? `A: ${filterAlliance}` : null,
+    excludeGuild ? `!G: ${excludeGuild}` : null,
+    excludeAlliance ? `!A: ${excludeAlliance}` : null,
   ].filter(Boolean).join(", ");
 
   return (
@@ -387,6 +399,28 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
                   suggestions={alliances}
                   multiSelect={true}
                   onClear={() => updateColumnFilters(config.id, { filterAlliance: "" })}
+                />
+              </div>
+
+              <div className="relative">
+                <FilterInput
+                  placeholder={t("Exclude Guild")}
+                  value={excludeGuild}
+                  onChange={(val) => updateColumnFilters(config.id, { excludeGuild: String(val) })}
+                  suggestions={guilds}
+                  multiSelect={true}
+                  onClear={() => updateColumnFilters(config.id, { excludeGuild: "" })}
+                />
+              </div>
+
+              <div className="relative">
+                <FilterInput
+                  placeholder={t("Exclude Alliance")}
+                  value={excludeAlliance}
+                  onChange={(val) => updateColumnFilters(config.id, { excludeAlliance: String(val) })}
+                  suggestions={alliances}
+                  multiSelect={true}
+                  onClear={() => updateColumnFilters(config.id, { excludeAlliance: "" })}
                 />
               </div>
 
