@@ -25,7 +25,7 @@ type EventClusterInfoUpdate struct {
 	DefensePointLeft   []int64 `mapsturcture:"17"` // 未花费防御点
 	DefensePointTotal  []int64 `mapsturcture:"18"` // 总防御点
 
-	ResourceTypes                  []int   `mapstructure:"52"`
+	ResourceTypes                  []int   `mapstructure:"52"` // 220 矿 217木头 95中箱
 	ResourcePosistions             []int   `mapstructure:"53"`
 	ResourceOutposeUnlockTimestamp []int64 `mapstructure:"54"` // 哨塔箱子
 	ResourceUnlockTimestamp        []int64 `mapstructure:"55"`

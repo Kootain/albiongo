@@ -9,7 +9,7 @@ interface PlayerCardProps {
   player: Player;
 }
 
-const image_proxy = 'https://pic.kootain.workers.dev/?url='
+const image_proxy = 'https://img.albionbox.com'
 
 export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
   const { t } = useTranslation();
@@ -43,7 +43,7 @@ export const PlayerCard: React.FC<PlayerCardProps> = ({ player }) => {
 
     return (
       <div className="group relative flex items-center" title={tooltipText}>
-        <img src={`${image_proxy}https://render.albiononline.com/v1/item/${item.UniqueName}`} className="w-8 h-8 mr-2 object-contain" alt={itemName} />
+        <img src={`${image_proxy}/v1/item/${item.UniqueName}`} className="w-8 h-8 mr-2 object-contain" alt={itemName} />
         <div className="text-sm text-zinc-300 truncate">
           <span className="text-indigo-400/80 mr-1"> P{item.Tier+item.Enchant}</span>
           {itemName}
