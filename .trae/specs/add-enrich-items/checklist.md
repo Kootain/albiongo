@@ -1,0 +1,5 @@
+- [x] `item_manager.js` script tag is added to `test_client.html`.
+- [x] `ItemManager` is instantiated and loading data from the correct URL.
+- [x] `enrichItems` correctly checks for and maps `ItemID`, `ItemIDs`, `EquipmentID`, and `EquipmentIDs` to their respective name fields.
+- [x] `enrichItems` is called recursively for nested objects.
+- [x] `enrichItems(parsed)` is called inside the `appendLog` function.

@@ -194,6 +194,7 @@
     </div>
 
     <script src="spell_manager.js"></script>
+    <script src="item_manager.js"></script>
     <script>
         const OperationCodes = {
             0: 'OpUnused',
@@ -1404,6 +1405,9 @@
         const spellManager = new SpellManager('ZH-CN');
         spellManager.load('http://localhost:8081/data/spells.json');
 
+        const itemManager = new ItemManager('ZH-CN');
+        itemManager.load('http://localhost:8081/data/items.json');
+
         function enrichSpells(obj) {
             if (typeof obj !== 'object' || obj === null) return;
             
@@ -1420,6 +1424,29 @@
             for (let key in obj) {
                 if (typeof obj[key] === 'object') {
                     enrichSpells(obj[key]);
+                }
+            }
+        }
+
+        function enrichItems(obj) {
+            if (typeof obj !== 'object' || obj === null) return;
+            
+            if (obj.ItemID !== undefined) {
+                obj.ItemName = itemManager.getName(obj.ItemID);
+            }
+            if (obj.ItemIDs && Array.isArray(obj.ItemIDs)) {
+                obj.ItemNames = obj.ItemIDs.map(id => itemManager.getName(id));
+            }
+            if (obj.EquipmentID !== undefined) {
+                obj.EquipmentName = itemManager.getName(obj.EquipmentID);
+            }
+            if (obj.EquipmentIDs && Array.isArray(obj.EquipmentIDs)) {
+                obj.EquipmentNames = obj.EquipmentIDs.map(id => itemManager.getName(id));
+            }
+            
+            for (let key in obj) {
+                if (typeof obj[key] === 'object') {
+                    enrichItems(obj[key]);
                 }
             }
         }
@@ -1543,6 +1570,7 @@
             }
 
             enrichSpells(parsed);
+            enrichItems(parsed);
             // Determine Type and Code
             let type = parsed.Type;
             let code = parsed.Code;
