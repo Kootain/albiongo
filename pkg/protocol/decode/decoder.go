@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"strconv"
 
-	log "github.com/sirupsen/logrus"
-
 	"albiongo/pkg/game"
 	"albiongo/pkg/protocol"
 	"albiongo/pkg/protocol/types"
@@ -25,6 +23,7 @@ func (d *Decoder) DecodeEvent(code int, params map[byte]interface{}) (etype prot
 	if etype = types.GetEventTypes(ecode); etype == nil {
 		return types.NewDefaultEventType(ecode, params), nil
 	}
+
 	if err = DecodeParams(params, &etype); err != nil {
 		return nil, err
 	}
@@ -57,9 +56,13 @@ func (d *Decoder) DecodeResponse(code int, params map[byte]interface{}) (etype p
 // It handles key conversion (byte to string) and custom type decoding (CharacterID).
 func DecodeParams(params map[byte]interface{}, result interface{}) error {
 	convertGameObjects := func(from reflect.Type, to reflect.Type, v interface{}) (interface{}, error) {
-		if from == reflect.TypeOf([]int8{}) && to == reflect.TypeOf(game.CharacterID("")) {
-			log.Debug("Parsing character ID from mixed-endian UUID")
-			return decodeCharacterID(v.([]int8)), nil
+		if to == reflect.TypeOf(game.CharacterID("")) {
+			if from == reflect.TypeOf([]int8{}) {
+				return decodeCharacterID(v.([]int8)), nil
+			}
+			if from == reflect.TypeOf([]uint8{}) {
+				return decodeCharacterID(v.([]uint8)), nil
+			}
 		}
 		return v, nil
 	}
@@ -84,7 +87,7 @@ func DecodeParams(params map[byte]interface{}, result interface{}) error {
 	return decoder.Decode(stringMap)
 }
 
-func decodeCharacterID(array []int8) game.CharacterID {
+func decodeCharacterID[T int8 | uint8](array []T) game.CharacterID {
 	/* So this is a UUID, which is stored in a 'mixed-endian' format.
 	The first three components are stored in little-endian, the rest in big-endian.
 	See https://en.wikipedia.org/wiki/Universally_unique_identifier#Encoding.

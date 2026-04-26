@@ -4,6 +4,7 @@ import (
 	"albiongo/data"
 	"albiongo/pkg/bus"
 	"albiongo/pkg/game"
+	"encoding/json"
 	"net/http"
 	"sync"
 	"time"
@@ -60,7 +61,13 @@ func (c *Client) writePump() {
 				return
 			}
 
-			if err := c.conn.WriteJSON(message); err != nil {
+			b, err := json.Marshal(message)
+			if err != nil {
+				logrus.Errorf("Websocket write error (JSON marshal failed): %v", err)
+				continue
+			}
+
+			if err := c.conn.WriteMessage(websocket.TextMessage, b); err != nil {
 				return
 			}
 		case <-ticker.C:

@@ -7,12 +7,13 @@ import (
 
 type ResponseJoin struct {
 	*OperationBase
-	ObjectID     int           `mapstructure:"0"`
-	Name         string        `mapstructure:"2"`
-	ClusterName  string        `mapstructure:"8"`
-	Pos          game.Position `mapstructure:"9"`
-	GuildName    string        `mapstructure:"57"`
-	AllianceName string        `mapstructure:"78"`
+	ObjectID     int              `mapstructure:"0"`
+	Name         string           `mapstructure:"2"`
+	ClusterName  string           `mapstructure:"8"`
+	Pos          game.Position    `mapstructure:"9"`
+	GuildID      game.CharacterID `mapstructure:"56"`
+	GuildName    string           `mapstructure:"58"`
+	AllianceName string           `mapstructure:"79"`
 }
 
 // [2026-03-10 10:13:51] [INFO] [albiongo/consumer/log.go:26] [ProtocolTypeResponse][Join](2) map[0:442

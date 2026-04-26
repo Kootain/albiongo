@@ -2,11 +2,8 @@ import type { ItemData, LocalizedText, SpellData } from './types';
 
 // ─── 模块配置 ─────────────────────────────────────────────────────────────────
 
-let _baseUrl = 'http://localhost:8081';
 let _lang: string = 'ZH-CN';
 
-/** 设置后端 base URL，默认 http://localhost:8081 */
-export const setBaseUrl = (url: string) => { _baseUrl = url; };
 
 /** 设置默认语言，默认 ZH-CN */
 export const setLanguage = (lang: string) => { _lang = lang; };

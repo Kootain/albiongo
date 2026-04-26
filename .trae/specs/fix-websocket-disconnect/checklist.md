@@ -1,0 +1,4 @@
+- [x] `sanitizeForJSON` function is implemented and handles `map[interface{}]interface{}` safely
+- [x] `flattenStruct` function correctly extracts fields from embedded structs
+- [x] `writePump` skips bad messages and logs errors without closing the connection
+- [x] `pkg/api/server.go` compiles without errors

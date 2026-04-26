@@ -1,0 +1,4 @@
+- [x] `deseriallizer.go` 中存在 `PhotonMap` 类型并实现了 `MarshalJSON()` 方法。
+- [x] `deserializeDictionary` 和 `deserializeHashtable` 正确返回 `PhotonMap` 类型。
+- [x] `pkg/api/server.go` 已不再包含 `sanitizeForJSON` 或 `flattenStruct` 函数。
+- [x] 整个 `albiongo` 项目编译通过，无任何语法错误 (`go build ./...`)。

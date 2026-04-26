@@ -1,32 +1,37 @@
 package core
 
 import (
+	"bytes"
 	"encoding/base64"
 	"encoding/gob"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 
 	"albiongo/pkg/bus"
 	"albiongo/pkg/protocol"
+	"albiongo/pkg/protocol/photon"
 
-	photon "github.com/ao-data/photon-spectator"
+	photon_old "github.com/ao-data/photon-spectator"
+	"github.com/bytedance/gg/gslice"
 	"github.com/google/gopacket"
 	"github.com/google/gopacket/layers"
 	"github.com/google/gopacket/pcap"
 	log "github.com/sirupsen/logrus"
-	"github.com/bytedance/gg/gslice"
 )
 
 type listener struct {
-	handle        *pcap.Handle
-	sourcePackets chan gopacket.Packet
-	commands      chan photon.PhotonCommand
-	displayName   string
-	fragments     *photon.FragmentBuffer
-	quit          chan bool
-	bus           *bus.EventBus[protocol.Command]
-	decoder       protocol.Decoder
+	handle         *pcap.Handle
+	sourcePackets  chan gopacket.Packet
+	commands       chan photon_old.PhotonCommand
+	displayName    string
+	fragments      *photon_old.FragmentBuffer
+	quit           chan bool
+	bus            *bus.EventBus[protocol.Command]
+	decoder        protocol.Decoder
+	packetsHandler *photon.PhotonParser
 }
 
 var (
@@ -34,12 +39,59 @@ var (
 )
 
 func newListener(bus *bus.EventBus[protocol.Command], decoder protocol.Decoder) *listener {
+	onEvent := func(event *photon.EventData) {
+		val := event.Parameters[252]
+		code, ok := val.(int16)
+		if !ok {
+			code = int16(event.Code)
+		}
+		decodedObject, err := decoder.DecodeEvent(int(code), event.Parameters)
+		if err != nil {
+			// TODO: log
+			log.Errorf("Error decoding event: %v, err: %v", event, err)
+			return
+		}
+		bus.Publish(decodedObject)
+	}
+	onRequest := func(request *photon.OperationRequest) {
+		val := request.Parameters[253]
+		code, ok := val.(int16)
+		if !ok {
+			log.Errorf("Error decoding request, unkown code, %v", request.Parameters)
+		}
+		decodedObject, err := decoder.DecodeRequest(int(code), request.Parameters)
+		if err != nil {
+			// TODO: log
+			log.Errorf("Error decoding request: %v", err)
+			return
+		}
+		bus.Publish(decodedObject)
+	}
+	onResponse := func(response *photon.OperationResponse) {
+		val := response.Parameters[253]
+		code, ok := val.(int16)
+		if !ok {
+			log.Errorf("Error decoding request, unkown code, %v", response.Parameters)
+		}
+		decodedObject, err := decoder.DecodeResponse(int(code), response.Parameters)
+		if err != nil {
+			// TODO: log
+			log.Errorf("Error decoding response: %d, %v, err: %v", code, response.Parameters, err)
+			return
+		}
+
+		bus.Publish(decodedObject)
+	}
+	packetsHandler := photon.NewPhotonParser(
+		onEvent, onRequest, onResponse,
+	)
 	return &listener{
-		fragments: photon.NewFragmentBuffer(),
-		commands:  make(chan photon.PhotonCommand, 1),
-		quit:      make(chan bool, 1),
-		bus:       bus,
-		decoder:   decoder,
+		fragments:      photon_old.NewFragmentBuffer(),
+		commands:       make(chan photon_old.PhotonCommand, 1),
+		quit:           make(chan bool, 1),
+		bus:            bus,
+		decoder:        decoder,
+		packetsHandler: packetsHandler,
 	}
 }
 
@@ -55,8 +107,8 @@ func (l *listener) startOnline(device string, port int) {
 		log.Panic(err)
 	}
 
-	layers.RegisterUDPPortLayerType(layers.UDPPort(port), photon.PhotonLayerType)
-	layers.RegisterTCPPortLayerType(layers.TCPPort(port), photon.PhotonLayerType)
+	layers.RegisterUDPPortLayerType(layers.UDPPort(port), photon_old.PhotonLayerType)
+	layers.RegisterTCPPortLayerType(layers.TCPPort(port), photon_old.PhotonLayerType)
 	source := gopacket.NewPacketSource(l.handle, l.handle.LinkType())
 	l.sourcePackets = source.Packets()
 
@@ -66,8 +118,8 @@ func (l *listener) startOnline(device string, port int) {
 
 func registerPhotonPorts(ports []int) {
 	for _, port := range ports {
-		layers.RegisterUDPPortLayerType(layers.UDPPort(port), photon.PhotonLayerType)
-		layers.RegisterTCPPortLayerType(layers.TCPPort(port), photon.PhotonLayerType)
+		layers.RegisterUDPPortLayerType(layers.UDPPort(port), photon_old.PhotonLayerType)
+		layers.RegisterTCPPortLayerType(layers.TCPPort(port), photon_old.PhotonLayerType)
 	}
 }
 
@@ -100,7 +152,7 @@ func (l *listener) startOfflineCommandGob(path string) {
 
 	go func() {
 		for {
-			command := &photon.PhotonCommand{}
+			command := &photon_old.PhotonCommand{}
 			if decoder == nil {
 				break
 			}
@@ -139,7 +191,10 @@ func (l *listener) run() {
 			return
 		case packet := <-l.sourcePackets:
 			if packet != nil {
-				l.processPacket(packet)
+
+				packetBytes := l.packetsHandler.ProcessPacket(packet)
+				l.packetsHandler.ReceivePacket(packetBytes)
+				// l.processPacket(packet)
 			} else {
 				// MUST only happen with the offline processor.
 				l.handle.Close()
@@ -178,27 +233,27 @@ func (l *listener) processPacket(packet gopacket.Packet) {
 		return
 	}
 
-	layer := packet.Layer(photon.PhotonLayerType)
+	layer := packet.Layer(photon_old.PhotonLayerType)
 
 	if layer == nil {
 		// log.Debug("Packet does not contain Photon layer")
 		return
 	}
 
-	content, _ := layer.(photon.PhotonLayer)
+	content, _ := layer.(photon_old.PhotonLayer)
 
 	for _, command := range content.Commands {
 		switch command.Type {
-		case photon.SendReliableType:
+		case photon_old.SendReliableType:
 			l.onReliableCommand(&command)
-		case photon.SendUnreliableType:
+		case photon_old.SendUnreliableType:
 			var s = make([]byte, len(command.Data)-4)
 			copy(s, command.Data[4:])
 			command.Data = s
 			command.Length -= 4
 			command.Type = 6
 			l.onReliableCommand(&command)
-		case photon.SendReliableFragmentType:
+		case photon_old.SendReliableFragmentType:
 			msg, _ := command.ReliableFragment()
 			result := l.fragments.Offer(msg)
 			if result != nil {
@@ -208,7 +263,21 @@ func (l *listener) processPacket(packet gopacket.Packet) {
 	}
 }
 
-func (l *listener) onReliableCommand(command *photon.PhotonCommand) {
+func bytes2string(in []byte) string {
+	if len(in) == 0 {
+		return ""
+	}
+	// 将每个字节格式化为十进制，并用逗号拼接
+	var sb strings.Builder
+	sb.WriteString(strconv.Itoa(int(in[0])))
+	for i := 1; i < len(in); i++ {
+		sb.WriteString(",")
+		sb.WriteString(strconv.Itoa(int(in[i])))
+	}
+	return sb.String()
+}
+
+func (l *listener) onReliableCommand(command *photon_old.PhotonCommand) {
 	// Record all photon commands even if the params did not parse correctly
 	// if ConfigGlobal.RecordPath != "" {
 	// 	l.router.recordPhotonCommand <- *command
@@ -221,10 +290,13 @@ func (l *listener) onReliableCommand(command *photon.PhotonCommand) {
 		}
 		return
 	}
-	params := photon.DecodeReliableMessage(msg)
+	// params := photon_old.DecodeReliableMessage(msg)
+	// log.Info("[Count1]", msg.ParameterCount)
+	params := photon.ReadParameterTableWithCount(int(msg.ParameterCount), bytes.NewBuffer(msg.Data))
+
 	if params == nil {
 		if !ConfigGlobal.DebugIgnoreDecodingErrors {
-			log.Debugf("ERROR: Could not decode params: [%d] (%d) (%d) %v", msg.Type, msg.ParameterCount, len(msg.Data), base64.StdEncoding.EncodeToString(msg.Data))
+			// log.Debugf("ERROR: Could not decode params: [%d] (%d) (%d) %v", msg.Type, msg.ParameterCount, len(msg.Data), base64.StdEncoding.EncodeToString(msg.Data))
 		}
 		return
 	}
@@ -232,7 +304,7 @@ func (l *listener) onReliableCommand(command *photon.PhotonCommand) {
 	var decodedObject protocol.Command
 
 	switch msg.Type {
-	case photon.OperationRequest:
+	case photon_old.OperationRequest:
 		if val, ok := params[253]; ok {
 			code := int(val.(int16))
 			log.Debugf("OperationRequest: Code %d", code)
@@ -244,7 +316,7 @@ func (l *listener) onReliableCommand(command *photon.PhotonCommand) {
 				log.Errorf("OperationRequest: ERROR - %v", err)
 			}
 		}
-	case photon.OperationResponse:
+	case photon_old.OperationResponse:
 		if val, ok := params[253]; ok {
 			code := int(val.(int16))
 			log.Debugf("OperationResponse: Code %d", code)
@@ -256,7 +328,7 @@ func (l *listener) onReliableCommand(command *photon.PhotonCommand) {
 				log.Errorf("OperationResponse: ERROR - %v", err)
 			}
 		}
-	case photon.EventDataType:
+	case photon_old.EventDataType:
 		val := params[252]
 		code, ok := val.(int16)
 		if !ok {
@@ -267,7 +339,8 @@ func (l *listener) onReliableCommand(command *photon.PhotonCommand) {
 			break
 		}
 		log.Debugf("EventDataType: Code %d", code)
-
+		log.Info(params)
+		log.Info(fmt.Sprintf("[%d] %s", code, bytes2string(msg.Data)))
 		decodedObject, err = l.decoder.DecodeEvent(int(code), params)
 		if err != nil && !ConfigGlobal.DebugIgnoreDecodingErrors {
 			log.Errorf("EventDataType: ERROR - %v", err)
