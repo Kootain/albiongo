@@ -202,8 +202,8 @@ function buildEvent(entry: RawLogEntry, players: Record<number, PlayerProfile>):
       };
     }
     case 'cast_hits': {
-      // 新格式: CasterObjectID(Data[0]), TargetObjectIDs(Data[1]), SpellIndices(Data[2]), CasterName
-      // 旧格式: Data[0]=casterObjectID, [1]=[targetObjectIDs], [2]=[spellIndices]
+      // 新格式: CasterObjectID(Data[0]), TargetObjectIDs(Data[1]), SpellIDs(Data[2]), CasterName
+      // 旧格式: Data[0]=casterObjectID, [1]=[targetObjectIDs], [2]=[spellIDs]
       const casterId  = entry.CasterObjectID ?? dNum(entry, 0);
       const targetIds = entry.TargetObjectIDs ?? dNumArr(entry, 1);
       const firstTarget = targetIds?.[0];
@@ -214,7 +214,7 @@ function buildEvent(entry: RawLogEntry, players: Record<number, PlayerProfile>):
         actorGuild: profile(casterId)?.guildName,
         targetId:   firstTarget,
         targetName: profile(firstTarget)?.name,
-        spellId:    (entry.SpellIndices ?? dNumArr(entry, 2))?.[0],
+        spellId:    (entry.SpellIDs ?? dNumArr(entry, 2))?.[0],
       };
     }
     case 'health_update': {

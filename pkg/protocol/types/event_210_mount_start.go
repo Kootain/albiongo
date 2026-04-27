@@ -2,6 +2,7 @@ package types
 
 import "albiongo/pkg/protocol"
 
+// TODO: fix code
 // EvMountStart (Code 210) — 玩家开始骑乘动作（施法中，尚未骑上）
 type EventMountStart struct {
 	*EventBase

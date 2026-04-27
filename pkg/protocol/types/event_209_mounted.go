@@ -2,6 +2,7 @@ package types
 
 import "albiongo/pkg/protocol"
 
+// TODO: fix code
 // EvMounted (Code 209) — 玩家骑乘完成，开始骑行状态
 type EventMounted struct {
 	*EventBase

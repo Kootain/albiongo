@@ -7,7 +7,7 @@ type EventCastHits struct {
 	*EventBase
 	CasterObjectID  int   `mapstructure:"0" json:"CasterObjectID"`
 	TargetObjectIDs []int `mapstructure:"1" json:"TargetObjectIDs"`
-	SpellIndices    []int `mapstructure:"2" json:"SpellIndices"`
+	SpellIDs        []int `mapstructure:"2" json:"SpellIDs"`
 
 	CasterName string `player_name:"CasterObjectID"`
 }

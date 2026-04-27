@@ -14,7 +14,9 @@ import { getSpell, getItem } from "../utils/dataManager";
 import { evaluateBlockFilterStrategies } from "../filters/skillUseFilters";
 import { ItemData, PlayerEquipment } from "../types";
 
-const host = "192.168.31.95:8081";
+// const host = "192.168.31.95:8081";
+const host = "192.168.31.44:8081";
+
 
 export const useWebSocket = () => {
   const wsRef = useRef<WebSocket | null>(null);

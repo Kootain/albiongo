@@ -5,7 +5,7 @@ import (
 	"albiongo/pkg/protocol"
 )
 
-type ResponsGetPVPChallengeData struct {
+type ResponseGetGuildMightCategoryContribution struct {
 	*OperationBase
 	GuildID       game.CharacterID `mapstructure:"0"`
 	ChallengeType string           `mapstructure:"1"`
@@ -19,8 +19,8 @@ type ResponsGetPVPChallengeData struct {
 }
 
 func init() {
-	RegisterResponse(protocol.OpGetPvpChallengeData, func() *ResponsGetPVPChallengeData {
-		return &ResponsGetPVPChallengeData{
+	RegisterResponse(protocol.OpGetGuildMightCategoryContribution, func() *ResponseGetGuildMightCategoryContribution {
+		return &ResponseGetGuildMightCategoryContribution{
 			OperationBase: NewOperationBase(protocol.ProtocolTypeResponse, protocol.OpGetPvpChallengeData),
 		}
 	})
