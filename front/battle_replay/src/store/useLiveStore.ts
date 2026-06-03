@@ -84,7 +84,7 @@ function parseWsEvent(raw: WsEvent): BattleEvent {
         ...base,
         actorId:   raw.CasterObjectID,
         actorName: raw.CasterName,
-        spellId:   raw.SpellIndices?.[0],  // 直接 DB ID
+        spellId:   raw.SpellIDs?.[0],  // 直接 DB ID
       };
 
     case 'cast_start':

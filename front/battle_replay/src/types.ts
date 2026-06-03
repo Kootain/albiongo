@@ -38,7 +38,7 @@ export interface RawLogEntry {
 
   // Code 22: EventCastHits
   TargetObjectIDs?: number[];
-  SpellIndices?: number[];
+  SpellIDs?: number[];
 
   // Code 16: EventCastCancel
   IsInterupted?: boolean;

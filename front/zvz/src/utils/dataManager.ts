@@ -9,6 +9,9 @@ import {
 } from '@albion/game-data';
 
 export {
+  setBackendApiBaseUrl,
+  getBackendApiBaseUrl,
+  getBackendWsBaseUrl,
   loadGameData,
   isLoaded,
   getItem,

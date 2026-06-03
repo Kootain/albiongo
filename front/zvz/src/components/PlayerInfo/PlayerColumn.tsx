@@ -123,12 +123,14 @@ export const PlayerColumn: React.FC<PlayerColumnProps> = ({ config, onRemove }) 
           const item = getItem(wid);
           if (!item) return "ZZZ";
           const nameZH = item.Name && item.Name['ZH-CN'] ? item.Name['ZH-CN'] : '';
+          console.log(nameZH, getWeaponType(nameZH))
           return getWeaponType(nameZH) || "ZZZ";
         };
 
         if (sortByWeaponType) {
           const typeA = getWType(a);
           const typeB = getWType(b);
+
           
           const orderA = TYPE_ORDER[typeA] || 999;
           const orderB = TYPE_ORDER[typeB] || 999;

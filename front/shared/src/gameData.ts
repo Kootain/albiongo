@@ -1,4 +1,5 @@
 import type { ItemData, LocalizedText, SpellData } from './types';
+import { getBackendApiBaseUrl } from './backendApi';
 
 // ─── 模块配置 ─────────────────────────────────────────────────────────────────
 
@@ -18,16 +19,21 @@ let _loaded = false;
 
 // ─── 加载 ─────────────────────────────────────────────────────────────────────
 
+interface iweaponTypes {
+  name: string
+  type: string
+}
+
 export const loadGameData = async (): Promise<void> => {
   if (_loaded) return;
 
   const ossProtocol = typeof window !== 'undefined' && window.location.protocol === 'https:' ? 'https' : 'http';
   const ossBase = `${ossProtocol}://albion-resource.oss-cn-shanghai.aliyuncs.com`;
 
-  const [itemsRes, spellsRes] = await Promise.all([
+  const [itemsRes, spellsRes, weaponTypesRes] = await Promise.all([
     fetch(`${ossBase}/items.json`),
     fetch(`${ossBase}/spells.json`),
-    // fetch(`${_baseUrl}/data/weapon_types.json`),
+    fetch(`${getBackendApiBaseUrl()}/data/weapon_types.json`).catch(() => null),
   ]);
 
   if (!itemsRes.ok || !spellsRes.ok) {
@@ -49,6 +55,10 @@ export const loadGameData = async (): Promise<void> => {
     spellMap.set(s.Index, s);
   });
 
+  if (weaponTypesRes && weaponTypesRes.ok) {
+    const weaponTypesData = (await weaponTypesRes.json()) as Array<iweaponTypes>;
+    weaponTypesData.forEach((e) => weaponTypeMap.set(e.name, e.type));
+  }
 
   _loaded = true;
   console.log(`[game-data] 已加载 ${itemMap.size} 件物品, ${spellMap.size} 个技能, ${weaponTypeMap.size} 种武器类型`);

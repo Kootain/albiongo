@@ -4,7 +4,7 @@ import { WebSocketServer, WebSocket } from "ws";
 import http from "http";
 
 const app = express();
-const PORT = 3000;
+const PORT = 3003;
 const server = http.createServer(app);
 const wss = new WebSocketServer({ server });
 

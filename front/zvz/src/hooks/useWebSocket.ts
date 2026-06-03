@@ -10,12 +10,14 @@ import {
   CastSpellEvent,
   BaseEvent,
 } from "../events";
-import { getSpell, getItem } from "../utils/dataManager";
+import {
+  getSpell,
+  getItem,
+  getBackendApiBaseUrl,
+  getBackendWsBaseUrl,
+} from "../utils/dataManager";
 import { evaluateBlockFilterStrategies } from "../filters/skillUseFilters";
 import { ItemData, PlayerEquipment } from "../types";
-
-// const host = "192.168.31.95:8081";
-const host = "192.168.31.44:8081";
 
 
 export const useWebSocket = () => {
@@ -35,7 +37,7 @@ export const useWebSocket = () => {
 
   useEffect(() => {
     // Initial fetch
-    fetch(`http://${host}/players`)
+    fetch(`${getBackendApiBaseUrl()}/players`)
       .then((res) => res.json())
       .then((data) => setPlayers(data))
       .catch((err) => console.error("Failed to load players:", err));
@@ -129,7 +131,7 @@ export const useWebSocket = () => {
     eventRegistry.register(19, handleSkillUse);
 
     const connect = () => {
-      const wsUrl = `ws://${host}/events`;
+      const wsUrl = `${getBackendWsBaseUrl()}/events`;
       const ws = new WebSocket(wsUrl);
 
       ws.onopen = () => {
